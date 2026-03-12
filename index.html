@@ -4240,10 +4240,10 @@ async function hpSubmitSignup(){
   leads.push({phone,name,company,ts:Date.now()});
   localStorage.setItem('dm_leads',JSON.stringify(leads));
 
-  // Send to Google Sheets
-  await sendToSheets({action:'signup_request',name,phone,company,position,
+  // Send to Google Sheets (non-blocking — don't await, never block signup)
+  sendToSheets({action:'signup_request',name,phone,company,position,
     companyEmail:compEmail,instagram:insta?'instagram.com/'+insta:'',
-    status:'pending',submittedAt:new Date().toLocaleString('en-IN')});
+    status:'pending',submittedAt:new Date().toLocaleString('en-IN')}).catch(()=>{});
 
   // Email notification to developer
   const subject=encodeURIComponent('DesignMind Signup — '+name+' ('+company+')');
@@ -4300,18 +4300,23 @@ function openProfile(){
 }
 
 function profRefreshDisplay(prof){
+  prof = prof || PROFDB.get();
   const initials = (prof.name||'SA').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('prof-av-placeholder').textContent = initials;
-  document.getElementById('navAv').textContent = initials;
-  document.getElementById('prof-disp-name').textContent    = prof.name||'Your Name';
-  document.getElementById('prof-disp-company').textContent  = prof.company||'Company';
-  document.getElementById('prof-disp-phone').textContent   = prof.phone ? '+91 '+prof.phone : '—';
-  document.getElementById('prof-disp-email').textContent   = prof.email||prof.companyEmail||'—';
-  document.getElementById('prof-disp-loc').textContent     = prof.location||'—';
-  document.getElementById('prof-disp-web').textContent     = prof.website||'—';
-  document.getElementById('prof-disp-insta').textContent   = prof.insta ? '@'+prof.insta : '—';
+  const navAv = document.getElementById('navAv'); if(navAv) navAv.textContent = initials;
+  const ph = document.getElementById('prof-av-placeholder'); if(ph) ph.textContent = initials;
+  const dn = document.getElementById('prof-disp-name'); if(dn) dn.textContent = prof.name||'Your Name';
+  const dc = document.getElementById('prof-disp-company'); if(dc) dc.textContent = prof.company||'Company';
+  const dp = document.getElementById('prof-disp-phone'); if(dp) dp.textContent = prof.phone ? '+91 '+prof.phone : '—';
+  const de = document.getElementById('prof-disp-email'); if(de) de.textContent = prof.email||prof.companyEmail||'—';
+  const dl = document.getElementById('prof-disp-loc'); if(dl) dl.textContent = prof.location||'—';
+  const dw = document.getElementById('prof-disp-web'); if(dw) dw.textContent = prof.website||'—';
+  const di = document.getElementById('prof-disp-insta'); if(di) di.textContent = prof.insta ? '@'+prof.insta : '—';
   const badge = document.getElementById('prof-status-badge');
-  if(badge){ badge.textContent = prof.status==='approved'||!prof.status ? '✅ Approved' : prof.status==='pending' ? '⏳ Pending' : '❌ Denied'; badge.style.background = prof.status==='pending'?'rgba(184,136,74,.1)':prof.status==='denied'?'rgba(168,77,58,.1)':'rgba(94,114,96,.1)'; badge.style.color = prof.status==='pending'?'#B8884A':prof.status==='denied'?'#A84D3A':'#5E7260'; }
+  if(badge){
+    badge.textContent = prof.status==='approved'||!prof.status ? '✅ Approved' : prof.status==='pending' ? '⏳ Pending' : '❌ Denied';
+    badge.style.background = prof.status==='pending'?'rgba(184,136,74,.1)':prof.status==='denied'?'rgba(168,77,58,.1)':'rgba(94,114,96,.1)';
+    badge.style.color = prof.status==='pending'?'#B8884A':prof.status==='denied'?'#A84D3A':'#5E7260';
+  }
 }
 
 function profHandleAvatar(files){
