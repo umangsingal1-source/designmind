@@ -1184,15 +1184,16 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 </div>
 <div class="scr" id="s-lib">
   <div class="s-head">
-    <div><h1 class="s-title">Image <em>Library</em></h1><p class="s-sub">Browse curated interiors or search millions of web photos</p></div>
+    <div><h1 class="s-title">Image <em>Library</em></h1><p class="s-sub">Browse, search, save inspiration — all in one place</p></div>
     <button class="btn-ghost" onclick="goHome()">← Back to Projects</button>
   </div>
 
   <!-- Source tabs -->
   <div class="lib-source-tabs">
-    <button class="lib-stab on" id="lib-tab-curated" onclick="libSwitchTab('curated')">✦ Curated Library <span style="background:var(--gold-bg);color:var(--gold);border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px" id="lib-total-badge">113</span></button>
-    <button class="lib-stab" id="lib-tab-web" onclick="libSwitchTab('web')">🌐 Web Search <span style="background:rgba(94,114,96,.1);color:#5E7260;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px">Pexels · Free</span></button>
-    <button class="lib-stab" id="lib-tab-renders" onclick="libSwitchTab('renders')">📸 My Renders <span style="background:rgba(58,107,138,.1);color:#3A6B8A;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px">AI-Tagged</span></button>
+    <button class="lib-stab on" id="lib-tab-curated" onclick="libSwitchTab('curated')">✦ Curated <span style="background:var(--gold-bg);color:var(--gold);border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px" id="lib-total-badge">113</span></button>
+    <button class="lib-stab" id="lib-tab-web" onclick="libSwitchTab('web')">🌐 Web Search <span style="background:rgba(94,114,96,.1);color:#5E7260;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px">Pexels</span></button>
+    <button class="lib-stab" id="lib-tab-renders" onclick="libSwitchTab('renders')">📸 My Renders <span style="background:rgba(58,107,138,.1);color:#3A6B8A;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px" id="lib-renders-badge">0</span></button>
+    <button class="lib-stab" id="lib-tab-favourites" onclick="libSwitchTab('favourites')">❤️ Favourites <span style="background:rgba(168,77,58,.1);color:#A84D3A;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px" id="lib-fav-badge">0</span></button>
   </div>
 
   <!-- ── CURATED TAB ── -->
@@ -1201,7 +1202,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       <span style="font-size:1.6rem">🏛️</span>
       <div style="flex:1;min-width:200px">
         <div style="font-size:.83rem;font-weight:500;color:var(--ink);margin-bottom:2px">Curated Interior Design Library</div>
-        <div style="font-size:.74rem;color:var(--muted);line-height:1.5">Today: <strong style="color:var(--gold)"><span id="lib-count-display">113</span> photos</strong> across <strong>8 room types</strong> and <strong>8 design styles</strong>.</div>
+        <div style="font-size:.74rem;color:var(--muted);line-height:1.5"><strong style="color:var(--gold)"><span id="lib-count-display">113</span> photos</strong> across 8 room types · Renders from designers on DesignMind</div>
       </div>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center">
@@ -1235,9 +1236,9 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       <div style="font-size:1.4rem">🌐</div>
       <div>
         <div style="font-size:.8rem;font-weight:500">Powered by Pexels · Millions of free professional photos</div>
-        <div style="font-size:.69rem;color:var(--muted)">All images free to use · Attribution auto-included · <strong>Execution 1:</strong> Web images are free</div>
+        <div style="font-size:.69rem;color:var(--muted)">All images free to use · Heart ❤️ any image to save to Favourites</div>
       </div>
-      <div style="margin-left:auto;font-size:.62rem;color:#5E7260;font-weight:600;background:rgba(94,114,96,.1);padding:4px 10px;border-radius:100px">FREE · EXEC 1</div>
+      <div style="margin-left:auto;font-size:.62rem;color:#5E7260;font-weight:600;background:rgba(94,114,96,.1);padding:4px 10px;border-radius:100px">FREE</div>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:16px;align-items:center">
       <div style="position:relative;flex:1">
@@ -1246,7 +1247,6 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       </div>
       <button class="btn" style="background:#5E7260;flex-shrink:0" onclick="pexelsSearch()">Search →</button>
     </div>
-    <!-- Quick search suggestions -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px" id="pexels-suggestions">
       <button class="snag-fpill" onclick="pexelsQuick('modern living room')">modern living room</button>
       <button class="snag-fpill" onclick="pexelsQuick('minimalist bedroom')">minimalist bedroom</button>
@@ -1263,13 +1263,12 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     </div>
   </div>
 
-  <!-- ── MY RENDERS TAB (AI tagged) ── -->
+  <!-- ── MY RENDERS TAB ── -->
   <div id="lib-renders-panel" style="display:none">
     <div style="background:rgba(58,107,138,.06);border:1px solid rgba(58,107,138,.15);border-radius:12px;padding:13px 18px;margin-bottom:16px">
-      <div style="font-size:.82rem;font-weight:500;margin-bottom:3px">📸 AI-Analysed Render Library</div>
-      <div style="font-size:.71rem;color:var(--muted);line-height:1.6">Upload renders in <strong>Client Renders</strong> → Claude automatically analyses style, palette, mood, materials and stores them here. Use the filters below to find inspiration across all projects.</div>
+      <div style="font-size:.82rem;font-weight:500;margin-bottom:3px">📸 All Project Renders</div>
+      <div style="font-size:.71rem;color:var(--muted);line-height:1.6">Every render you've uploaded across all projects, auto-tagged with style, mood, palette, and materials. Heart ❤️ any render to save to Favourites.</div>
     </div>
-    <!-- Filters -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px" id="renders-filters">
       <input class="fi" id="renders-filter-style" placeholder="Style…" style="font-size:.72rem" oninput="loadAIRendersLibrary()">
       <input class="fi" id="renders-filter-room"  placeholder="Room…"  style="font-size:.72rem" oninput="loadAIRendersLibrary()">
@@ -1279,8 +1278,27 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     <div id="lib-renders-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px">
       <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
         <div style="font-size:2rem;margin-bottom:10px">📸</div>
-        <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No renders analysed yet</div>
-        <div style="font-size:.76rem;margin-top:5px">Go to Client Renders → upload images → Claude tags them automatically</div>
+        <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No renders yet</div>
+        <div style="font-size:.76rem;margin-top:5px">Upload renders in Client Renders → they appear here automatically</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FAVOURITES TAB ── -->
+  <div id="lib-favourites-panel" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+      <div style="background:rgba(168,77,58,.06);border:1px solid rgba(168,77,58,.15);border-radius:12px;padding:13px 18px;flex:1;min-width:240px">
+        <div style="font-size:.82rem;font-weight:500;margin-bottom:3px">❤️ My Favourites</div>
+        <div style="font-size:.71rem;color:var(--muted);line-height:1.6">Your personal mood board. Heart ❤️ any image from Web Search or My Renders, or upload directly from your device.</div>
+      </div>
+      <button class="btn" style="background:#A84D3A;flex-shrink:0" onclick="document.getElementById('fav-upload-file').click()">+ Upload from Device</button>
+      <input type="file" id="fav-upload-file" accept="image/*" multiple style="display:none" onchange="favHandleUpload(this.files)">
+    </div>
+    <div class="fav-grid" id="fav-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
+        <div style="font-size:2.5rem;margin-bottom:10px">❤️</div>
+        <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No favourites yet</div>
+        <div style="font-size:.76rem;margin-top:5px">Upload from device or heart ❤️ images in Web Search or My Renders</div>
       </div>
     </div>
   </div>
@@ -1859,7 +1877,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
         <div class="prof-divider"></div>
         <div style="padding:14px 18px;display:flex;flex-direction:column;gap:8px">
           <button class="btn" style="width:100%;background:var(--ink);font-size:.74rem" onclick="openPortfolio()">🎨 View My Portfolio →</button>
-          <button class="btn-ghost" style="width:100%;font-size:.74rem" onclick="openFavourites()">❤️ My Favourites</button>
+          <button class="btn-ghost" style="width:100%;font-size:.74rem" onclick="openLibrary();setTimeout(()=>libSwitchTab('favourites'),80)">❤️ My Favourites</button>
           <button class="btn-ghost" style="width:100%;font-size:.74rem;color:#A84D3A;border-color:rgba(168,77,58,.3)" onclick="hpSignOut()">↩ Sign Out</button>
         </div>
       </div>
@@ -2013,27 +2031,9 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
   </div>
 </div>
 
-<!-- ══ SCREEN: MY FAVOURITES ══ -->
-<div class="scr" id="s-favourites">
-  <div class="s-head">
-    <div><h1 class="s-title">My <em>Favourites</em></h1><p class="s-sub">Save inspiration from anywhere — your personal mood board</p></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn-ghost" onclick="goHome()">← Back</button>
-      <button class="btn" style="background:#A84D3A" onclick="document.getElementById('fav-upload-file').click()">+ Upload from Device</button>
-      <input type="file" id="fav-upload-file" accept="image/*" multiple style="display:none" onchange="favHandleUpload(this.files)">
-    </div>
-  </div>
-  <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.15);border-radius:10px;padding:11px 16px;margin-bottom:18px;font-size:.75rem;color:var(--ink2)">
-    ❤️ <strong>Tip:</strong> Heart any image in the Image Library to save it here. Or upload directly from your device. Favourites are private — only you can see them.
-  </div>
-  <div class="fav-grid" id="fav-grid">
-    <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
-      <div style="font-size:2.5rem;margin-bottom:10px">❤️</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No favourites yet</div>
-      <div style="font-size:.76rem;margin-top:5px">Upload from your device or heart images in the library</div>
-    </div>
-  </div>
-</div>
+<!-- s-favourites merged into Image Library → Favourites tab -->
+
+
 
 <!-- ══ MODAL: ADD PORTFOLIO PROJECT ══ -->
 <div class="ph2-ovl" id="modal-port-proj" onclick="ph2OvlClick(event,'modal-port-proj')">
@@ -2687,7 +2687,8 @@ function renderProjs(){
   const g=document.getElementById('pg');
   g.querySelectorAll('.pc').forEach(c=>c.remove());
   g.querySelectorAll('.empty-state').forEach(c=>c.remove());
-  const allProjs=[...PROJS,...RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',label:p.type||'Project',color:'gold',loc:p.client||'—',bud:'—',phase:'Active',pct:0,type:p.type}))];
+  const rhProjs = RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',label:p.type||'Project',color:'gold',loc:p.client||'—',bud:'—',phase:p.completed?'Completed':'Active',pct:p.completed?100:0,type:p.type,completed:p.completed}));
+  const allProjs=[...PROJS,...rhProjs];
   if(!allProjs.length){
     const empty=document.createElement('div');
     empty.className='empty-state';
@@ -2702,16 +2703,216 @@ function renderProjs(){
   allProjs.forEach(p=>g.insertBefore(mkPC(p),g.querySelector('.add-card')));
   if(typeof updateProjStats==='function') updateProjStats();
 }
+
 function mkPC(p){
-  const d=document.createElement('div');d.className='pc';
-  d.innerHTML=`<div class="pc-ban ${CB[p.type]||'b-flat'}"><span class="pc-ico">${p.icon}</span><span class="pc-type">${p.label}</span></div>
-  <div class="pc-body"><div class="pc-name">${p.name}</div><div class="pc-det">${p.loc} · ${p.bud}</div>
-  <div><div class="pc-pt"><span class="pc-ph">${p.phase}</span><span>${p.pct}%</span></div>
-  <div class="ptr"><div class="ptf ${CF[p.color]||'pf-gold'}" style="width:${p.pct}%"></div></div></div>
-  <div class="pc-foot"><span class="ppill ${CP[p.color]||'pp-gold'}">${(p.phase.split('·')[1]||'Active').trim()}</span><span class="carr">→</span></div></div>`;
-  d.onclick=()=>toast('📂 '+p.name+' — full dashboard coming soon!');return d;
+  const d=document.createElement('div'); d.className='pc';
+  const isCompleted = !!p.completed;
+  const isRH = RH.getProjs().some(rp=>rp.id===p.id);
+  d.innerHTML=`
+    <div class="pc-ban ${CB[p.type]||'b-flat'}" style="${isCompleted?'opacity:.75':''}">
+      <span class="pc-ico">${p.icon}</span>
+      <span class="pc-type">${p.label}</span>
+      ${isCompleted?'<span style="margin-left:auto;background:rgba(94,114,96,.85);color:white;font-size:.58rem;border-radius:100px;padding:2px 8px;font-weight:600">✓ DONE</span>':''}
+    </div>
+    <div class="pc-body">
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-det">${p.loc} · ${p.bud}</div>
+      <div><div class="pc-pt"><span class="pc-ph">${p.phase}</span><span>${p.pct}%</span></div>
+      <div class="ptr"><div class="ptf ${CF[p.color]||'pf-gold'}" style="width:${p.pct}%${isCompleted?';background:#5E7260':''}"></div></div></div>
+      <div class="pc-foot" style="justify-content:space-between;align-items:center">
+        <span class="ppill ${CP[p.color]||'pp-gold'}">${isCompleted?'✓ Completed':'Active'}</span>
+        <div style="display:flex;gap:6px">
+          ${isRH && !isCompleted ? `<button onclick="event.stopPropagation();showCompleteProjectDialog('${p.id}')" style="background:rgba(94,114,96,.1);border:1px solid rgba(94,114,96,.25);color:#5E7260;border-radius:100px;font-size:.62rem;padding:4px 9px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500" title="Mark complete & publish">✓ Complete</button>` : ''}
+          ${isRH && isCompleted ? `<button onclick="event.stopPropagation();showCompleteProjectDialog('${p.id}')" style="background:rgba(184,136,74,.1);border:1px solid rgba(184,136,74,.25);color:#B8884A;border-radius:100px;font-size:.62rem;padding:4px 9px;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500">🎨 Portfolio</button>` : ''}
+          ${isRH ? `<button onclick="event.stopPropagation();confirmDeleteProject('${p.id}','${p.name.replace(/'/g,"\\'")}')" style="background:rgba(168,77,58,.08);border:1px solid rgba(168,77,58,.2);color:#A84D3A;border-radius:100px;font-size:.62rem;padding:4px 9px;cursor:pointer;font-family:'Outfit',sans-serif" title="Delete project">🗑</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  d.querySelector('.pc-name').onclick = ()=>{
+    if(isRH) openProjDetail(RH.getProjs().find(rp=>rp.id===p.id)||p);
+    else toast('📂 '+p.name);
+  };
+  return d;
 }
 function filterProj(q){q=q.toLowerCase();document.querySelectorAll('.pc').forEach(c=>{c.style.display=c.querySelector('.pc-name')?.textContent.toLowerCase().includes(q)?'':'none';});}
+
+// ── DELETE PROJECT ────────────────────────────────────────────────────────────
+function confirmDeleteProject(projId, projName){
+  const modal = document.createElement('div');
+  modal.id = 'del-proj-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML=`
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.25);text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:12px">🗑️</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300;margin-bottom:8px">Delete project?</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.7;margin-bottom:6px">
+        You are about to permanently delete<br><strong style="color:var(--ink)">"${projName}"</strong>
+      </div>
+      <div style="background:rgba(168,77,58,.07);border:1px solid rgba(168,77,58,.2);border-radius:9px;padding:10px 14px;font-size:.71rem;color:#A84D3A;line-height:1.6;margin-bottom:22px;text-align:left">
+        ⚠️ This will delete all project data including renders, BOQ items, snag list, procurement records and to-dos. <strong>This cannot be undone.</strong>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('del-proj-modal').remove()">Cancel</button>
+        <button class="btn" style="flex:1;background:#A84D3A" onclick="doDeleteProject('${projId}')">Delete Forever</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function doDeleteProject(projId){
+  document.getElementById('del-proj-modal')?.remove();
+  // Remove from RH projects (localStorage dm_rh_projs)
+  const projs = RH.getProjs().filter(p=>p.id!==projId);
+  localStorage.setItem('dm_rh_projs', JSON.stringify(projs));
+  // Remove BOQ data
+  localStorage.removeItem('dm_boq_'+projId);
+  // Remove procurement & todos
+  localStorage.removeItem('dm_proc_'+projId);
+  localStorage.removeItem('dm_todos_'+projId);
+  // Remove from snag list
+  const snags = JSON.parse(localStorage.getItem('dm_snag_projs')||'[]').filter(s=>s.id!==projId);
+  localStorage.setItem('dm_snag_projs', JSON.stringify(snags));
+  // Remove render tags for this project
+  const tags = RENDER_TAGS.get().filter(t=>t.projId!==projId);
+  RENDER_TAGS.save(tags);
+  // Remove images from IndexedDB
+  try{
+    const imgs = await RH.getProjImgs(projId);
+    for(const img of imgs) await IDB_IMAGES.del(img.id);
+  }catch(e){}
+  renderProjs();
+  updateProjStats();
+  toast('🗑️ Project deleted');
+}
+
+// ── COMPLETE PROJECT & PUBLISH TO PORTFOLIO ──────────────────────────────────
+function showCompleteProjectDialog(projId){
+  const proj = RH.getProjs().find(p=>p.id===projId);
+  if(!proj) return;
+  const portData = PORTDB.get();
+  const existing = (portData.projects||[]).find(pp=>pp.projId===projId);
+
+  const modal = document.createElement('div');
+  modal.id = 'complete-proj-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  modal.innerHTML=`
+    <div style="background:#FDFCFA;border-radius:20px;width:100%;max-width:560px;box-shadow:0 28px 80px rgba(28,26,23,.25);overflow:hidden;margin:auto">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:3px">✓ Complete & Publish Project</div>
+        <div style="font-size:.72rem;color:var(--muted)">${proj.name} · Add to your portfolio</div>
+      </div>
+      <div style="padding:20px 24px;max-height:65vh;overflow-y:auto">
+
+        <div class="fg" style="margin-bottom:14px">
+          <label class="fl">Project Title <span style="color:#A84D3A">*</span></label>
+          <input class="fi" id="cp-title" value="${existing?.title||proj.name||''}" placeholder="e.g. Modern 3BHK in Bandra">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="fg">
+            <label class="fl">Location</label>
+            <input class="fi" id="cp-location" value="${existing?.location||''}" placeholder="e.g. Mumbai">
+          </div>
+          <div class="fg">
+            <label class="fl">Year</label>
+            <input class="fi" id="cp-year" value="${existing?.year||new Date().getFullYear()}" placeholder="2025">
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="fg">
+            <label class="fl">Area / Size</label>
+            <input class="fi" id="cp-area" value="${existing?.area||''}" placeholder="e.g. 1,200 sq ft">
+          </div>
+          <div class="fg">
+            <label class="fl">Style</label>
+            <input class="fi" id="cp-style" value="${existing?.style||''}" placeholder="e.g. Contemporary">
+          </div>
+        </div>
+
+        <div class="fg" style="margin-bottom:14px">
+          <label class="fl">Project Description</label>
+          <textarea class="fi bft" id="cp-desc" rows="3" placeholder="Brief description of the project, challenges, design concept…" style="resize:vertical">${existing?.desc||''}</textarea>
+        </div>
+
+        <div class="fg" style="margin-bottom:6px">
+          <label class="fl">Portfolio Photos <span style="font-size:.62rem;color:var(--muted2);text-transform:none;letter-spacing:0">(add or remove photos for this project)</span></label>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;margin-top:8px" id="cp-photo-grid">
+            <div id="cp-add-photo" onclick="document.getElementById('cp-photo-input').click()" style="width:90px;height:90px;border-radius:10px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.4rem;background:var(--bg2)" title="Add photo">+</div>
+          </div>
+          <input type="file" id="cp-photo-input" accept="image/*" multiple style="display:none" onchange="cpHandlePhotos(this.files,'${projId}')">
+        </div>
+        <div style="font-size:.67rem;color:var(--muted);margin-bottom:18px">Click + to add photos · Click ✕ on any photo to remove it</div>
+
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn-ghost" onclick="document.getElementById('complete-proj-modal').remove()">Cancel</button>
+        <button class="btn" style="background:#5E7260" onclick="doCompleteProject('${projId}')">✓ Mark Complete & Publish →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Load existing photos if any
+  cpPhotos = [...(existing?.photos||[])];
+  cpRenderPhotoGrid();
+}
+
+let cpPhotos = [];
+
+function cpRenderPhotoGrid(){
+  const grid = document.getElementById('cp-photo-grid');
+  if(!grid) return;
+  const addBtn = `<div id="cp-add-photo" onclick="document.getElementById('cp-photo-input').click()" style="width:90px;height:90px;border-radius:10px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.4rem;background:var(--bg2)" title="Add photo">+</div>`;
+  grid.innerHTML = cpPhotos.map((url,i)=>`
+    <div style="position:relative;width:90px;height:90px">
+      <img src="${url}" style="width:90px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--border)">
+      <button onclick="cpPhotos.splice(${i},1);cpRenderPhotoGrid()" style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:rgba(168,77,58,.9);border:none;color:white;cursor:pointer;font-size:.55rem;display:flex;align-items:center;justify-content:center">✕</button>
+    </div>`).join('') + addBtn;
+}
+
+function cpHandlePhotos(files){
+  Array.from(files).forEach(f=>{
+    const r=new FileReader(); r.onload=e=>{ cpPhotos.push(e.target.result); cpRenderPhotoGrid(); }; r.readAsDataURL(f);
+  });
+  document.getElementById('cp-photo-input').value='';
+}
+
+function doCompleteProject(projId){
+  const title = document.getElementById('cp-title')?.value.trim();
+  if(!title){ toast('Please enter a project title'); return; }
+
+  // 1. Mark project as completed in RH
+  const projs = RH.getProjs();
+  const proj = projs.find(p=>p.id===projId);
+  if(proj){ proj.completed=true; proj.completedAt=Date.now(); }
+  localStorage.setItem('dm_rh_projs', JSON.stringify(projs));
+
+  // 2. Save to portfolio
+  const portData = PORTDB.get();
+  if(!portData.projects) portData.projects=[];
+  const existing = portData.projects.findIndex(pp=>pp.projId===projId);
+  const entry = {
+    id: existing>=0 ? portData.projects[existing].id : 'pp_'+Date.now().toString(36),
+    projId,
+    title,
+    location: document.getElementById('cp-location')?.value.trim()||'',
+    year: document.getElementById('cp-year')?.value.trim()||'',
+    area: document.getElementById('cp-area')?.value.trim()||'',
+    style: document.getElementById('cp-style')?.value.trim()||'',
+    desc: document.getElementById('cp-desc')?.value.trim()||'',
+    photos: cpPhotos,
+    publishedAt: Date.now(),
+  };
+  if(existing>=0) portData.projects[existing]=entry;
+  else portData.projects.unshift(entry);
+  PORTDB.save(portData);
+
+  document.getElementById('complete-proj-modal')?.remove();
+  cpPhotos=[];
+  renderProjs();
+  updateProjStats();
+  toast('✓ Project completed & published to portfolio!');
+}
 
 /* ─── Modal ─────────────────────────────────────────────────────────────────── */
 function openModal(){propSel=null;document.getElementById('np').value='';document.getElementById('createBtn').disabled=true;document.querySelectorAll('.po').forEach(o=>o.classList.remove('sel'));document.getElementById('modal').classList.add('open');setTimeout(()=>document.getElementById('np').focus(),280);}
@@ -3660,11 +3861,12 @@ let pexelsLastQuery = '';
 
 // ── Lib tab switching ─────────────────────────────────────────────────────────
 function libSwitchTab(tab){
-  ['curated','web','renders'].forEach(t=>{
+  ['curated','web','renders','favourites'].forEach(t=>{
     document.getElementById('lib-tab-'+t).classList.toggle('on',t===tab);
     document.getElementById('lib-'+t+'-panel').style.display=(t===tab)?'block':'none';
   });
   if(tab==='renders') loadAIRendersLibrary();
+  if(tab==='favourites'){ favRender(); updateFavBadge(); }
 }
 
 // ── Pexels search ─────────────────────────────────────────────────────────────
@@ -3704,10 +3906,13 @@ async function pexelsFetch(query, page, replace){
 function pexelsRenderResults(photos, replace){
   const grid = document.getElementById('pexels-grid');
   const html = photos.map(p=>`
-    <div class="pexels-result" onclick="openLB('${p.src.large}','${p.photographer} via Pexels')">
-      <img src="${p.src.medium}" alt="${p.alt||'Interior'}" loading="lazy">
+    <div class="pexels-result" style="position:relative">
+      <img src="${p.src.medium}" alt="${p.alt||'Interior'}" loading="lazy" onclick="openLB('${p.src.large}','${p.photographer} via Pexels')">
       <div class="pexels-badge">FREE</div>
       <div class="pexels-attr">📷 ${p.photographer}</div>
+      <button onclick="favAddFromWeb('${p.src.large}')"
+        style="position:absolute;top:7px;right:7px;background:rgba(247,244,239,.88);border:none;cursor:pointer;font-size:1rem;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .18s;z-index:2"
+        title="Save to favourites">❤️</button>
     </div>`).join('');
   if(replace) grid.innerHTML=html;
   else grid.insertAdjacentHTML('beforeend',html);
@@ -4239,7 +4444,7 @@ async function loadAIRendersLibrary(){
       <div style="position:relative">
         <img src="${t.dataUrl}" style="width:100%;height:160px;object-fit:cover;cursor:pointer;display:block"
           onclick="openLB('${t.dataUrl}','${(t.projName||'Render').replace(/'/g,"\\'")}  · ${t.style||''}  · ${t.room||''}')" loading="lazy">
-        <button onclick="favAddFromLib('${t.dataUrl}')"
+        <button onclick="favAddFromRender('${t.dataUrl}')"
           style="position:absolute;top:7px;right:7px;background:rgba(247,244,239,.88);border:none;cursor:pointer;font-size:1rem;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .18s"
           title="Add to favourites">❤️</button>
       </div>
@@ -4651,39 +4856,66 @@ function portShareWhatsApp(){ const url=encodeURIComponent(document.getElementBy
 // ── FAVOURITES ────────────────────────────────────────────────────────────────
 function openFavourites(){
   if(_demoCheck('Favourites')) return;
-  showScr('s-favourites');
-  document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
-  favRender();
+  openLibrary();
+  setTimeout(()=>libSwitchTab('favourites'), 80);
+}
+
+function updateFavBadge(){
+  const badge = document.getElementById('lib-fav-badge');
+  if(badge) badge.textContent = FAVDB.get().length;
 }
 
 function favRender(){
   const favs = FAVDB.get();
   const grid = document.getElementById('fav-grid');
-  if(!favs.length){ grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)"><div style="font-size:2.5rem;margin-bottom:10px">❤️</div><div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No favourites yet</div><div style="font-size:.76rem;margin-top:5px">Upload from device or heart images in the library</div></div>`; return; }
+  if(!grid) return;
+  if(!favs.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:10px">❤️</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No favourites yet</div>
+      <div style="font-size:.76rem;margin-top:5px">Upload from device or heart ❤️ images in Web Search or My Renders</div>
+    </div>`;
+    updateFavBadge(); return;
+  }
   grid.innerHTML = favs.map(f=>`
     <div class="fav-item">
-      <img src="${f.dataUrl}" alt="" onclick="openLB('${f.dataUrl}','Favourite')">
+      <img src="${f.dataUrl}" alt="" loading="lazy" onclick="openLB('${f.dataUrl}','Favourite')">
       <button class="fav-item-del" onclick="favRemove('${f.id}')">✕</button>
       <div class="fav-heart">❤️</div>
+      ${f.source?`<div style="position:absolute;bottom:6px;left:7px;font-size:.58rem;background:rgba(28,26,23,.55);color:#fff;border-radius:4px;padding:2px 6px">${f.source==='upload'?'📁 Device':f.source==='renders'?'📸 Render':'🌐 Web'}</div>`:''}
     </div>`).join('');
+  updateFavBadge();
 }
 
 function favHandleUpload(files){
+  let count=0;
   Array.from(files).forEach(f=>{
     const r=new FileReader(); r.onload=e=>{
       FAVDB.add({id:Date.now().toString(36)+Math.random().toString(36).slice(2,4),dataUrl:e.target.result,source:'upload',addedAt:Date.now()});
-      favRender();
+      count++;
+      if(count===files.length){ favRender(); toast('❤️ '+count+' photo'+(count>1?'s':'')+' added to favourites!'); }
     }; r.readAsDataURL(f);
   });
-  toast('❤️ Added to favourites!');
 }
 
 function favRemove(id){ FAVDB.remove(id); favRender(); toast('Removed from favourites'); }
 
-// Add heart button to library images — called from curated lib render
 function favAddFromLib(dataUrl){
   const added=FAVDB.add({id:'lib_'+Date.now().toString(36),dataUrl,source:'library',addedAt:Date.now()});
   toast(added?'❤️ Added to favourites!':'Already in favourites');
+  updateFavBadge();
+}
+
+function favAddFromRender(dataUrl){
+  const added=FAVDB.add({id:'rnd_'+Date.now().toString(36),dataUrl,source:'renders',addedAt:Date.now()});
+  toast(added?'❤️ Saved to favourites!':'Already in favourites');
+  updateFavBadge();
+}
+
+function favAddFromWeb(dataUrl){
+  const added=FAVDB.add({id:'web_'+Date.now().toString(36),dataUrl,source:'web',addedAt:Date.now()});
+  toast(added?'❤️ Saved to favourites!':'Already in favourites');
+  updateFavBadge();
 }
 
 // ── SHARED DEVELOPER RENDER LIBRARY (shown to all users, min 35% match) ─────
