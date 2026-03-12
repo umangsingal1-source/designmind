@@ -20,6 +20,68 @@
 }
 body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden;}
 
+/* ── AUTH SCREEN ─────────────────────────────────────────── */
+#s-home{display:none;min-height:100vh;position:fixed;inset:0;z-index:9999;overflow-y:auto;background:linear-gradient(145deg,#1C1A17 0%,#2E2B26 50%,#1C1A17 100%);}
+#s-home.on{display:flex;flex-direction:column;}
+.hp-hero{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px;min-height:100vh;position:relative;}
+.hp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(184,136,74,.12) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(94,114,96,.08) 0%,transparent 50%);pointer-events:none;}
+.hp-layout{display:flex;width:100%;max-width:900px;min-height:560px;border-radius:24px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,.5);position:relative;z-index:1;}
+.hp-left{flex:1;background:linear-gradient(160deg,#2E2B26 0%,#1C1A17 100%);padding:48px 40px;display:flex;flex-direction:column;justify-content:space-between;min-width:300px;}
+.hp-left-logo{display:flex;align-items:center;gap:10px;margin-bottom:40px;}
+.hp-left-dot{width:10px;height:10px;border-radius:50%;background:var(--gold);flex-shrink:0;}
+.hp-left-name{font-family:'Fraunces',serif;font-size:1.4rem;color:#F7F4EF;font-weight:300;}
+.hp-left-tagline{font-family:'Fraunces',serif;font-size:2rem;font-weight:300;color:#F7F4EF;line-height:1.25;letter-spacing:-.5px;margin-bottom:16px;}
+.hp-left-tagline em{color:var(--gold);font-style:italic;}
+.hp-left-sub{font-size:.78rem;color:rgba(247,244,239,.45);line-height:1.7;margin-bottom:32px;}
+.hp-features{display:flex;flex-direction:column;gap:10px;}
+.hp-feat{display:flex;align-items:center;gap:10px;font-size:.72rem;color:rgba(247,244,239,.55);}
+.hp-feat-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7;flex-shrink:0;}
+.hp-right{flex:1;background:#FDFCFA;display:flex;flex-direction:column;max-width:420px;}
+.hp-tabs{display:flex;border-bottom:1px solid var(--border);}
+.hp-tab{flex:1;padding:16px 12px;font-size:.78rem;font-weight:500;text-align:center;cursor:pointer;color:var(--muted);transition:all .2s;background:transparent;border:none;font-family:'Outfit',sans-serif;letter-spacing:.3px;}
+.hp-tab.on{color:var(--ink);border-bottom:2px solid var(--gold);background:rgba(184,136,74,.03);}
+.hp-body{padding:24px 28px 20px;flex:1;overflow-y:auto;}
+.hp-title{font-family:'Fraunces',serif;font-size:1.35rem;font-weight:300;margin-bottom:3px;color:var(--ink);}
+.hp-sub{font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+.hp-section-label{font-size:.6rem;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.hp-footer{padding:12px 28px 16px;border-top:1px solid var(--border);text-align:center;font-size:.65rem;color:var(--muted2);line-height:1.6;}
+.hp-divider{text-align:center;color:var(--muted2);font-size:.68rem;margin:12px 0;position:relative;}
+.hp-divider::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border);}
+.hp-divider span{background:#FDFCFA;padding:0 10px;position:relative;}
+/* Floating input label effect */
+.fi-wrap{position:relative;margin-bottom:14px;}
+.fi-wrap .fl{font-size:.62rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;}
+.fi-wrap .fi{transition:border-color .2s,box-shadow .2s;}
+.fi-wrap .fi:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,136,74,.12);}
+/* Password strength bar */
+.pwd-strength{height:3px;border-radius:2px;margin-top:5px;transition:all .3s;background:var(--border);}
+.pwd-strength.weak{background:#A84D3A;width:33%;}
+.pwd-strength.medium{background:#B8884A;width:66%;}
+.pwd-strength.strong{background:#5E7260;width:100%;}
+/* Input with icon */
+.fi-icon-wrap{position:relative;}
+.fi-icon-wrap .fi{padding-right:38px;}
+.fi-icon-wrap .fi-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted2);font-size:.75rem;padding:4px;}
+/* Phone input row */
+.phone-row{display:flex;gap:8px;align-items:center;}
+.phone-cc{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;font-size:.8rem;color:var(--muted);font-family:'Outfit',sans-serif;white-space:nowrap;}
+/* Submit btn loading */
+.hp-submit{width:100%;padding:12px;border:none;border-radius:10px;background:var(--ink);color:var(--bg);font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:500;cursor:pointer;transition:all .25s;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.3px;margin-top:4px;}
+.hp-submit:hover{background:#3D2B1F;transform:translateY(-1px);box-shadow:0 6px 20px rgba(28,26,23,.2);}
+.hp-submit.green{background:#5E7260;}
+.hp-submit.green:hover{background:#4A5A4C;}
+.hp-submit:disabled{opacity:.55;cursor:not-allowed;transform:none;box-shadow:none;}
+/* Error/success inline */
+.hp-inline-err{font-size:.68rem;color:#A84D3A;margin-top:4px;display:none;}
+.hp-inline-err.show{display:block;}
+@media(max-width:720px){
+  .hp-layout{flex-direction:column;border-radius:0;min-height:100vh;box-shadow:none;}
+  .hp-left{display:none;}
+  .hp-right{max-width:100%;min-height:100vh;}
+  .hp-body{padding:20px 20px 16px;}
+  .hp-footer{padding:10px 20px 14px;}
+}
+
 /* NAV */
 .nav{position:sticky;top:0;z-index:100;background:rgba(247,244,239,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 48px;height:64px;display:flex;align-items:center;justify-content:space-between;}
 .logo{display:flex;align-items:center;gap:10px;cursor:pointer;}
@@ -384,7 +446,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 }
 @media(max-width:580px){
   #renders-filters{ grid-template-columns:1fr 1fr!important; }
-}
   .logo-tag{display:none;}
   #pg{grid-template-columns:1fr!important;}
   .rg{grid-template-columns:1fr;}
@@ -393,19 +454,15 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   .sl{display:none;}
   .prop-grid{grid-template-columns:repeat(2,1fr);}
   .rf-grid,.rf-2{grid-template-columns:1fr;}
-  .api-banner{flex-wrap:wrap;}
-  .api-inp{width:100%;}
   .s-title{font-size:1.5rem;}
-  /* Bottom nav spacing */
   .scr.on{padding-bottom:72px!important;}
   .page{padding-bottom:80px!important;}
-  /* Fav grid */
   .fav-grid{grid-template-columns:repeat(2,1fr);}
-  /* Port proj grid */
   .port-proj-grid{grid-template-columns:1fr!important;}
-  /* Lib tabs scroll */
   .lib-source-tabs{overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;}
   .lib-stab{white-space:nowrap;flex-shrink:0;}
+  .s-head{gap:8px;}
+  .s-head>div:last-child .btn,.s-head>div:last-child .btn-ghost{font-size:.72rem;padding:7px 12px;}
 }
 
 /* ── BOTTOM NAV BAR (mobile only) ── */
@@ -921,78 +978,162 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 
 <div id="s-home" class="on">
   <div class="hp-hero">
-    <div class="hp-card">
-      <div class="hp-brand">
-        <div class="hp-brand-dot"></div>
-        <div class="hp-brand-name">DesignMind</div>
-        <div class="hp-brand-sub">Interior Design Platform</div>
-      </div>
-      <div class="hp-tabs">
-        <button class="hp-tab on" id="hp-tab-login" onclick="hpTab('login')">Sign In</button>
-        <button class="hp-tab" id="hp-tab-signup" onclick="hpTab('signup')">Create Account</button>
-      </div>
+    <div class="hp-layout">
 
-      <!-- LOGIN PANEL -->
-      <div id="hp-login" class="hp-body">
-        <div class="hp-title">Welcome back</div>
-        <div class="hp-sub">Sign in to your DesignMind account</div>
-        <div class="fg">
-          <label class="fl">Mobile Number</label>
-          <div style="display:flex;gap:8px">
-            <input class="fi" style="max-width:70px;text-align:center" value="+91" readonly>
-            <input class="fi" id="login-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1">
+      <!-- LEFT PANEL — branding (hidden on mobile) -->
+      <div class="hp-left">
+        <div>
+          <div class="hp-left-logo">
+            <div class="hp-left-dot"></div>
+            <div class="hp-left-name">DesignMind</div>
+          </div>
+          <div class="hp-left-tagline">Where great<br><em>interiors</em><br>begin.</div>
+          <div class="hp-left-sub">India's interior design platform — manage projects, collaborate with clients, build your portfolio.</div>
+          <div class="hp-features">
+            <div class="hp-feat"><div class="hp-feat-dot"></div>Smart project & BOQ management</div>
+            <div class="hp-feat"><div class="hp-feat-dot"></div>Client render review & approval</div>
+            <div class="hp-feat"><div class="hp-feat-dot"></div>Live snag list for site teams</div>
+            <div class="hp-feat"><div class="hp-feat-dot"></div>Portfolio to share with clients</div>
           </div>
         </div>
-        <div class="fg">
-          <label class="fl">Password</label>
-          <input class="fi" id="login-pwd" type="password" placeholder="Enter your password">
+        <div style="font-size:.65rem;color:rgba(247,244,239,.25);line-height:1.8">
+          By invitation only · Indian Designers<br>
+          support: umangsingal1@gmail.com
         </div>
-        <button class="btn" style="width:100%;background:var(--ink);margin-top:4px" onclick="hpLoginPassword()">Sign In →</button>
-        <div style="text-align:center;margin-top:10px;font-size:.7rem;color:var(--muted)">
-          Forgot password? <span style="color:var(--gold);cursor:pointer;font-weight:500" onclick="showResetPassword()">Reset it →</span>
-        </div>
-        <div class="hp-divider"><span>or</span></div>
-        <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="hpSkip()">Continue as Demo User →</button>
-        <div style="text-align:center;margin-top:10px;font-size:.7rem;color:var(--muted)">Don't have an account? <span style="color:var(--gold);cursor:pointer;font-weight:500" onclick="hpTab('signup')">Request Access →</span></div>
       </div>
 
-      <!-- SIGNUP PANEL -->
-      <div id="hp-signup" class="hp-body" style="display:none">
-        <div class="hp-title">Join DesignMind</div>
-        <div class="hp-sub">Submit your details — we'll verify and approve within 24 hours</div>
-        <div style="font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Personal Details</div>
-        <div class="fg"><label class="fl">Full Name <span style="color:#A84D3A">*</span></label><input class="fi" id="su-name" placeholder="e.g. Priya Sharma"></div>
-        <div class="fg"><label class="fl">Mobile Number <span style="color:#A84D3A">*</span></label>
-          <div style="display:flex;gap:8px"><input class="fi" style="max-width:70px;text-align:center" value="+91" readonly><input class="fi" id="su-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1"></div>
+      <!-- RIGHT PANEL — auth forms -->
+      <div class="hp-right">
+        <!-- Mobile logo -->
+        <div style="display:none;padding:20px 20px 0;align-items:center;gap:8px" id="hp-mobile-logo">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--gold)"></div>
+          <div style="font-family:'Fraunces',serif;font-size:1.1rem;color:var(--ink)">DesignMind</div>
         </div>
-        <div style="font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--sage);margin:14px 0 10px">Company Details</div>
-        <div class="fg"><label class="fl">Company / Studio Name <span style="color:#A84D3A">*</span></label><input class="fi" id="su-company" placeholder="e.g. Sharma Design Studio"></div>
-        <div class="fg"><label class="fl">Your Position <span style="color:#A84D3A">*</span></label>
-          <select class="bfs" id="su-position" style="width:100%">
-            <option value="">— Select your role —</option>
-            <option>Founder / Owner</option><option>Principal Designer</option><option>Interior Designer</option><option>Architect</option><option>Design Associate</option><option>Freelancer</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Company Email <span style="font-size:.62rem;color:var(--muted2);text-transform:none;letter-spacing:0">(preferred)</span></label><input class="fi" id="su-company-email" type="email" placeholder="studio@yourcompany.com"></div>
-        <div style="text-align:center;font-size:.68rem;color:var(--muted);margin:6px 0 4px">— or if no company email —</div>
-        <div class="fg"><label class="fl">Instagram Work Page <span style="font-size:.62rem;color:var(--muted2);text-transform:none;letter-spacing:0">(we'll verify you're a designer)</span></label>
-          <div style="display:flex;gap:8px;align-items:center"><span style="font-size:.78rem;color:var(--muted);flex-shrink:0;padding-top:1px">instagram.com/</span><input class="fi" id="su-insta" placeholder="yourstudiohandle" style="flex:1"></div>
-        </div>
-        <div style="background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.15);border-radius:9px;padding:10px 13px;font-size:.7rem;color:var(--ink2);line-height:1.7;margin:10px 0">
-          📞 <strong>Manual approval:</strong> Once you submit, our team will call you on your mobile number within <strong>24 hours</strong> to verify and approve your account.
-        </div>
-        <div style="font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--rust);margin:14px 0 10px">Set Your Password</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div class="fg"><label class="fl">Password <span style="color:#A84D3A">*</span></label><input class="fi" id="su-pwd" type="password" placeholder="Min 8 characters"></div>
-          <div class="fg"><label class="fl">Confirm Password <span style="color:#A84D3A">*</span></label><input class="fi" id="su-pwd2" type="password" placeholder="Repeat password"></div>
-        </div>
-        <button class="btn" style="width:100%;background:#5E7260;margin-top:4px" onclick="hpSubmitSignup()">Submit for Approval →</button>
-        <div class="hp-divider"><span>or</span></div>
-        <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="hpSkip()">Continue as Demo User →</button>
-      </div>
 
-      <div class="hp-footer">
-        By signing in you agree to DesignMind's Terms of Service &nbsp;·&nbsp; For support: umangsingal1@gmail.com
+        <div class="hp-tabs">
+          <button class="hp-tab on" id="hp-tab-login" onclick="hpTab('login')">Sign In</button>
+          <button class="hp-tab" id="hp-tab-signup" onclick="hpTab('signup')">Request Access</button>
+        </div>
+
+        <!-- ── SIGN IN PANEL ── -->
+        <div id="hp-login" class="hp-body">
+          <div class="hp-title">Welcome back</div>
+          <div class="hp-sub">Enter your registered mobile number and password</div>
+
+          <div class="fi-wrap">
+            <label class="fl">Mobile Number</label>
+            <div class="phone-row">
+              <span class="phone-cc">🇮🇳 +91</span>
+              <input class="fi" id="login-phone" type="tel" placeholder="98765 43210" maxlength="10" style="flex:1" oninput="this.value=this.value.replace(/\D/g,'')">
+            </div>
+          </div>
+
+          <div class="fi-wrap">
+            <label class="fl">Password</label>
+            <div class="fi-icon-wrap">
+              <input class="fi" id="login-pwd" type="password" placeholder="Your password" onkeydown="if(event.key==='Enter')hpLoginPassword()">
+              <button class="fi-toggle" onclick="togglePwd('login-pwd',this)" type="button">👁</button>
+            </div>
+            <div class="hp-inline-err" id="login-err">Incorrect password. <span style="color:var(--gold);cursor:pointer" onclick="showResetPassword()">Reset it →</span></div>
+          </div>
+
+          <button class="hp-submit" id="login-btn" onclick="hpLoginPassword()">Sign In →</button>
+
+          <div style="text-align:center;margin-top:10px;font-size:.68rem;color:var(--muted)">
+            Forgot password? <span style="color:var(--gold);cursor:pointer;font-weight:500" onclick="showResetPassword()">Reset →</span>
+          </div>
+
+          <div class="hp-divider" style="margin:16px 0"><span>or</span></div>
+          <button class="btn-ghost" style="width:100%;font-size:.76rem" onclick="hpSkip()">🎭 Continue as Demo</button>
+          <div style="text-align:center;margin-top:12px;font-size:.68rem;color:var(--muted)">
+            No account? <span style="color:var(--gold);cursor:pointer;font-weight:500" onclick="hpTab('signup')">Request access →</span>
+          </div>
+        </div>
+
+        <!-- ── SIGN UP PANEL ── -->
+        <div id="hp-signup" class="hp-body" style="display:none">
+          <div class="hp-title">Join DesignMind</div>
+          <div class="hp-sub">Tell us about yourself — we'll verify and approve within 24 hrs</div>
+
+          <div class="hp-section-label" style="color:var(--gold)">Personal Details</div>
+
+          <div class="fi-wrap">
+            <label class="fl">Full Name <span style="color:var(--rust)">*</span></label>
+            <input class="fi" id="su-name" placeholder="e.g. Priya Sharma" oninput="suValidate()">
+          </div>
+
+          <div class="fi-wrap">
+            <label class="fl">Mobile Number <span style="color:var(--rust)">*</span></label>
+            <div class="phone-row">
+              <span class="phone-cc">🇮🇳 +91</span>
+              <input class="fi" id="su-phone" type="tel" placeholder="98765 43210" maxlength="10" style="flex:1" oninput="this.value=this.value.replace(/\D/g,'');suValidate()">
+            </div>
+          </div>
+
+          <div class="hp-section-label" style="color:var(--sage)">Company Details</div>
+
+          <div class="fi-wrap">
+            <label class="fl">Company / Studio Name <span style="color:var(--rust)">*</span></label>
+            <input class="fi" id="su-company" placeholder="e.g. Sharma Design Studio" oninput="suValidate()">
+          </div>
+
+          <div class="fi-wrap">
+            <label class="fl">Your Position <span style="color:var(--rust)">*</span></label>
+            <select class="bfs fi" id="su-position" style="width:100%" onchange="suValidate()">
+              <option value="">— Select your role —</option>
+              <option>Founder / Owner</option><option>Principal Designer</option><option>Interior Designer</option><option>Architect</option><option>Design Associate</option><option>Freelancer</option>
+            </select>
+          </div>
+
+          <div class="fi-wrap">
+            <label class="fl">Company Email <span style="font-size:.6rem;color:var(--muted2);text-transform:none;letter-spacing:0;font-weight:400">(preferred for verification)</span></label>
+            <input class="fi" id="su-company-email" type="email" placeholder="studio@yourcompany.com" oninput="suValidate()">
+          </div>
+
+          <div style="text-align:center;font-size:.65rem;color:var(--muted2);margin:4px 0">— or —</div>
+
+          <div class="fi-wrap">
+            <label class="fl">Instagram Work Page</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;padding:9px 0">instagram.com/</span>
+              <input class="fi" id="su-insta" placeholder="yourstudiohandle" style="flex:1" oninput="suValidate()">
+            </div>
+          </div>
+
+          <div class="hp-section-label" style="color:var(--rust)">Set Password</div>
+
+          <div class="fi-wrap">
+            <label class="fl">Password <span style="color:var(--rust)">*</span></label>
+            <div class="fi-icon-wrap">
+              <input class="fi" id="su-pwd" type="password" placeholder="Min 8 characters" oninput="checkPwdStrength(this.value);suValidate()">
+              <button class="fi-toggle" onclick="togglePwd('su-pwd',this)" type="button">👁</button>
+            </div>
+            <div class="pwd-strength" id="pwd-bar"></div>
+            <div style="font-size:.62rem;color:var(--muted2);margin-top:3px" id="pwd-hint"></div>
+          </div>
+
+          <div class="fi-wrap">
+            <label class="fl">Confirm Password <span style="color:var(--rust)">*</span></label>
+            <div class="fi-icon-wrap">
+              <input class="fi" id="su-pwd2" type="password" placeholder="Repeat password" oninput="suValidate()">
+              <button class="fi-toggle" onclick="togglePwd('su-pwd2',this)" type="button">👁</button>
+            </div>
+            <div class="hp-inline-err" id="su-pwd-err">Passwords do not match</div>
+          </div>
+
+          <div style="background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.18);border-radius:9px;padding:10px 13px;font-size:.68rem;color:var(--ink2);line-height:1.75;margin:6px 0 14px">
+            📞 <strong>Manual approval:</strong> Our team calls you on your number within <strong>24 hours</strong> to verify and activate.
+          </div>
+
+          <button class="hp-submit green" id="su-btn" onclick="hpSubmitSignup()" disabled>Submit for Approval →</button>
+
+          <div class="hp-divider" style="margin:14px 0"><span>or</span></div>
+          <button class="btn-ghost" style="width:100%;font-size:.76rem" onclick="hpSkip()">🎭 Continue as Demo</button>
+        </div>
+
+        <div class="hp-footer">
+          By continuing you agree to DesignMind's Terms &nbsp;·&nbsp; support: umangsingal1@gmail.com
+        </div>
       </div>
     </div>
   </div>
@@ -1894,6 +2035,19 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
           <span id="prof-status-badge" style="background:var(--sage-bg);color:var(--sage);border-radius:100px;padding:3px 10px;font-size:.65rem;font-weight:600">✅ Approved</span>
         </div>
       </div>
+
+      <!-- Developer Admin Panel — only shown to Umang -->
+      <div class="prof-card" id="dev-admin-panel" style="margin-top:14px;padding:16px 18px;display:none;border:1px solid rgba(184,136,74,.3)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">🔐 Developer Panel</div>
+          <button class="btn-ghost btn-sm" onclick="devRefreshUsers()">↻ Refresh</button>
+        </div>
+        <div id="dev-user-info" style="font-size:.73rem;line-height:1.9;color:var(--ink2)">Loading…</div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Signup Leads</div>
+          <div id="dev-leads-info" style="font-size:.71rem;line-height:1.9;color:var(--muted)">—</div>
+        </div>
+      </div>
     </div>
 
     <!-- Right: Edit forms -->
@@ -2520,20 +2674,8 @@ const IMG_DB=[
 
 // ─── CDN URL builder ─────────────────────────────────────────────────────────
 function imgUrl(id, w=800, h=560){
-  // Placeholder until image hosting is set up
-  // id encodes room+style info for colour theming
-  const palettes = [
-    ['3D2B1F','C9A96E'],['2C3E35','8FAF8F'],['1C2B3A','6B9AB8'],
-    ['3A2825','C47A6B'],['2B2B2B','9E9E9E'],['1A2535','7A9EC4'],
-    ['352B1A','D4AA72'],['2A1F2B','9E7EC4'],['1F2E2A','7AB89E'],
-    ['2E2A1A','C4B472'],
-  ];
-  const pal = palettes[id % palettes.length];
-  const rooms = ['Living Room','Bedroom','Kitchen','Bathroom','Dining','Balcony','Study','Pooja Room'];
-  const styles = ['Contemporary','Minimalist','Scandinavian','Luxury','Industrial','Japandi','Bohemian','Traditional'];
-  const room = rooms[id % rooms.length];
-  const style = styles[Math.floor(id/10) % styles.length];
-  return `https://placehold.co/${w}x${h}/${pal[0]}/${pal[1]}?text=${encodeURIComponent(style+'\n'+room)}`;
+  // Pexels photo IDs — served directly from Pexels CDN
+  return `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}&h=${h}&fit=crop`;
 }
 
 // ─── Smart scoring engine ─────────────────────────────────────────────────────
@@ -2634,17 +2776,20 @@ function libFilter(){
   empty.style.display='none';grid.style.display='grid';
 
   grid.innerHTML=results.map(img=>`
-    <div onclick="openLB('${imgUrl(img.i,1400,980)}','${img.r} · ${img.s[0]} · ${img.m}')"
-      style="border-radius:11px;overflow:hidden;border:1px solid var(--border);background:var(--white);cursor:pointer;transition:all .28s"
+    <div style="border-radius:11px;overflow:hidden;border:1px solid var(--border);background:var(--white);cursor:pointer;transition:all .28s;position:relative"
       onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shl)'"
       onmouseout="this.style.transform='';this.style.boxShadow=''">
-      <div style="height:195px;overflow:hidden;position:relative;background:var(--bg2)">
+      <div style="height:195px;overflow:hidden;position:relative;background:var(--bg2)" onclick="openLB('${imgUrl(img.i,1400,980)}','${img.r} · ${img.s[0]} · ${img.m}')">
         <img src="${imgUrl(img.i,480,336)}" alt="${img.r}" loading="lazy"
           style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s"
           onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''"
-          onerror="this.closest('[onclick]').style.display='none'">
+          onerror="this.closest('div[style]').style.display='none'">
         <div style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:100px;padding:3px 9px;font-size:.58rem;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--ink)">${img.r}</div>
         <div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);border-radius:100px;padding:3px 9px;font-size:.56rem;color:rgba(255,255,255,.9)">${img.m}</div>
+        <button onclick="event.stopPropagation();favAddFromLib('${imgUrl(img.i,800,560)}')"
+          style="position:absolute;bottom:8px;right:8px;background:rgba(247,244,239,.9);border:none;cursor:pointer;font-size:.95rem;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:transform .15s"
+          onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform=''"
+          title="Save to favourites">❤️</button>
       </div>
       <div style="padding:11px 13px">
         <div style="font-size:.8rem;font-weight:500;color:var(--ink);margin-bottom:3px;text-transform:capitalize">${img.s[0]} ${img.r}</div>
@@ -3963,61 +4108,101 @@ function hpTab(tab){
   document.getElementById('hp-signup').style.display=tab==='signup'?'block':'none';
   document.getElementById('hp-tab-login').classList.toggle('on',tab==='login');
   document.getElementById('hp-tab-signup').classList.toggle('on',tab==='signup');
+  if(tab==='signup') setTimeout(()=>document.getElementById('su-name')?.focus(),80);
+  if(tab==='login')  setTimeout(()=>document.getElementById('login-phone')?.focus(),80);
 }
 
-function hpPhoneInput(inp, otpWrapId, sendBtnId){
-  const valid = /^\d{10}$/.test(inp.value.trim());
-  document.getElementById(sendBtnId).style.display = valid?'block':'none';
-  document.getElementById(otpWrapId).style.display='none';
+function togglePwd(id, btn){
+  const el = document.getElementById(id); if(!el) return;
+  const show = el.type==='password';
+  el.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
 }
+
+function checkPwdStrength(pwd){
+  const bar = document.getElementById('pwd-bar');
+  const hint = document.getElementById('pwd-hint');
+  if(!bar) return;
+  if(!pwd){ bar.className='pwd-strength'; bar.style.width='0'; if(hint) hint.textContent=''; return; }
+  const score = (pwd.length>=8?1:0)+(pwd.length>=12?1:0)+(/[A-Z]/.test(pwd)?1:0)+(/[0-9]/.test(pwd)?1:0)+(/[^a-zA-Z0-9]/.test(pwd)?1:0);
+  if(score<=2){ bar.className='pwd-strength weak'; if(hint){hint.textContent='Weak — add numbers or symbols';hint.style.color='#A84D3A';} }
+  else if(score<=3){ bar.className='pwd-strength medium'; if(hint){hint.textContent='Moderate';hint.style.color='#B8884A';} }
+  else { bar.className='pwd-strength strong'; if(hint){hint.textContent='Strong ✓';hint.style.color='#5E7260';} }
+}
+
+function suValidate(){
+  const name    = document.getElementById('su-name')?.value.trim();
+  const phone   = document.getElementById('su-phone')?.value.trim();
+  const company = document.getElementById('su-company')?.value.trim();
+  const pos     = document.getElementById('su-position')?.value;
+  const email   = document.getElementById('su-company-email')?.value.trim();
+  const insta   = document.getElementById('su-insta')?.value.trim();
+  const pwd     = document.getElementById('su-pwd')?.value||'';
+  const pwd2    = document.getElementById('su-pwd2')?.value||'';
+  const pwdErr  = document.getElementById('su-pwd-err');
+  if(pwdErr) pwdErr.classList.toggle('show', pwd.length>0 && pwd2.length>0 && pwd!==pwd2);
+  const ok = name && /^\d{10}$/.test(phone) && company && pos && (email||insta) && pwd.length>=8 && pwd===pwd2;
+  const btn = document.getElementById('su-btn');
+  if(btn){ btn.disabled = !ok; btn.style.opacity = ok?'1':'0.55'; }
+}
+
+// Mobile logo visibility
+document.addEventListener('DOMContentLoaded',()=>{
+  const ml = document.getElementById('hp-mobile-logo');
+  if(ml) ml.style.display = window.innerWidth<=720?'flex':'none';
+});
+window.addEventListener('resize',()=>{
+  const ml = document.getElementById('hp-mobile-logo');
+  if(ml) ml.style.display = window.innerWidth<=720?'flex':'none';
+});
 
 // ── PASSWORD LOGIN ────────────────────────────────────────────────────────────
 function hpLoginPassword(){
   const phone = document.getElementById('login-phone').value.trim();
   const pwd   = document.getElementById('login-pwd').value;
-  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number'); return; }
-  if(!pwd){ toast('Please enter your password'); return; }
+  const errEl = document.getElementById('login-err');
+  const btn   = document.getElementById('login-btn');
+  if(errEl) errEl.classList.remove('show');
 
-  const prof = PROFDB.get();
+  if(!/^\d{10}$/.test(phone)){ toast('Enter your 10-digit mobile number'); document.getElementById('login-phone')?.focus(); return; }
+  if(!pwd){ toast('Please enter your password'); document.getElementById('login-pwd')?.focus(); return; }
 
-  // No profile at all
-  if(!prof.phone){ toast('No account found for this number. Please sign up.'); return; }
-  if(prof.phone !== phone){ toast('No account found for this number.'); return; }
+  // Loading state
+  if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
 
-  // Denied accounts can never log in
-  if(prof.status==='denied'){ toast('❌ Account not approved. Email umangsingal1@gmail.com'); return; }
+  setTimeout(()=>{ // small delay for feel
+    const prof = PROFDB.get();
+    const restore = ()=>{ if(btn){ btn.disabled=false; btn.textContent='Sign In →'; } };
 
-  // No password set — this happens for accounts created before password feature
-  // Let them set a new password now if they know their phone number
-  if(!prof.password){
-    // Save the new password and approve them
-    prof.password = btoa(pwd);
-    prof.status   = 'approved';
+    if(!prof.phone || prof.phone !== phone){
+      toast('No account found for this number'); restore(); return;
+    }
+    if(prof.status==='denied'){
+      toast('❌ Account denied. Email umangsingal1@gmail.com'); restore(); return;
+    }
+    if(!prof.password){
+      // First-time — set password and enter
+      prof.password = btoa(pwd);
+      prof.status = 'approved';
+      PROFDB.save(prof);
+      localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
+      profRefreshDisplay();
+      toast('✦ Welcome, '+(prof.name||'Designer').split(' ')[0]+'!');
+      hpEnterApp(false); return;
+    }
+    if(prof.password !== btoa(pwd)){
+      if(errEl) errEl.classList.add('show');
+      document.getElementById('login-pwd').value='';
+      document.getElementById('login-pwd').focus();
+      restore(); return;
+    }
+    prof.status = 'approved';
     PROFDB.save(prof);
     localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
     profRefreshDisplay();
-    toast('✦ Password set! Welcome, '+(prof.name||'Designer').split(' ')[0]+'!');
-    hpEnterApp(false);
-    return;
-  }
-
-  // Wrong password
-  if(prof.password !== btoa(pwd)){
-    toast('❌ Wrong password');
-    // Show reset hint below the button
-    const hint = document.getElementById('login-pwd-hint');
-    if(hint){ hint.style.display='block'; }
-    return;
-  }
-
-  // Correct password — approve regardless of pending status
-  // (Umang approves via phone call, designer just uses their password)
-  prof.status = 'approved';
-  PROFDB.save(prof);
-  localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
-  profRefreshDisplay();
-  toast('👋 Welcome back, '+(prof.name||'Designer').split(' ')[0]+'!');
-  hpEnterApp(false);
+    if(btn){ btn.textContent='✓ Welcome back!'; }
+    setTimeout(()=>hpEnterApp(false), 400);
+  }, 320);
 }
 
 function showResetPassword(){
@@ -4240,9 +4425,48 @@ addEventListener('DOMContentLoaded',()=>{
 
 // ── OFFLINE RENDER TAGGER — no API, no cost ───────────────────────────────
 // Samples actual pixel colours from the image, maps them to design vocabulary
+// ── INTERIOR CONTENT CHECK ────────────────────────────────────────────────────
+// Lightweight heuristic: checks that image has typical interior colour profile
+// (warm neutrals, structured tones) and rejects obviously non-interior content
+async function isLikelyInterior(dataUrl){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.onload = ()=>{
+      try{
+        const c = document.createElement('canvas');
+        c.width = 32; c.height = 32;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, 32, 32);
+        const data = ctx.getImageData(0,0,32,32).data;
+        let skyBlue=0, skinTone=0, totalPx=0;
+        for(let i=0;i<data.length;i+=4){
+          const r=data[i],g=data[i+1],b=data[i+2];
+          // Detect dominant sky blue (outdoor indicator)
+          if(b>150 && b>r+40 && b>g+20) skyBlue++;
+          // Detect large skin tone areas (portrait indicator)
+          if(r>160 && g>100 && g<200 && b>80 && b<170 && r>g && r>b) skinTone++;
+          totalPx++;
+        }
+        const skyRatio  = skyBlue/totalPx;
+        const skinRatio = skinTone/totalPx;
+        // Reject if >35% sky blue (likely outdoor) or >25% skin tone (likely portrait)
+        resolve(skyRatio < 0.35 && skinRatio < 0.25);
+      } catch(e){ resolve(true); } // allow on error
+    };
+    img.onerror = ()=>resolve(true);
+    img.src = dataUrl;
+  });
+}
+
 async function analyseAndStoreRender(imgId, projId, projName, dataUrl){
-  toast('✦ Tagging render…');
+  toast('✦ Analysing render…');
   try{
+    // Interior content check before storing
+    const interior = await isLikelyInterior(dataUrl);
+    if(!interior){
+      toast('⚠️ Image skipped — looks like outdoors or portrait. Upload interior/furniture photos only.');
+      return;
+    }
     const tags = await offlineTagRender(dataUrl, projName);
     const thumb = await makeThumbnail(dataUrl, 280);
     const entry = {imgId, projId, projName, dataUrl:thumb, analysedAt:Date.now(), ...tags};
@@ -4534,91 +4758,120 @@ async function sendToSheets(payload){
 
 // ── SIGNUP SUBMIT (new flow — approval required) ──────────────────────────────
 async function hpSubmitSignup(){
-  const name    = document.getElementById('su-name').value.trim();
-  const phone   = document.getElementById('su-phone').value.trim();
-  const company = document.getElementById('su-company').value.trim();
-  const position= document.getElementById('su-position').value;
-  const compEmail = document.getElementById('su-company-email').value.trim();
-  const insta   = document.getElementById('su-insta').value.trim();
-  const pwd     = document.getElementById('su-pwd')?.value||'';
-  const pwd2    = document.getElementById('su-pwd2')?.value||'';
+  const name      = document.getElementById('su-name')?.value.trim()||'';
+  const phone     = document.getElementById('su-phone')?.value.trim()||'';
+  const company   = document.getElementById('su-company')?.value.trim()||'';
+  const position  = document.getElementById('su-position')?.value||'';
+  const compEmail = document.getElementById('su-company-email')?.value.trim()||'';
+  const insta     = document.getElementById('su-insta')?.value.trim()||'';
+  const pwd       = document.getElementById('su-pwd')?.value||'';
+  const pwd2      = document.getElementById('su-pwd2')?.value||'';
+  const btn       = document.getElementById('su-btn');
 
-  if(!name){ toast('Please enter your full name'); return; }
-  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number'); return; }
-  if(!company){ toast('Please enter your company / studio name'); return; }
-  if(!position){ toast('Please select your position'); return; }
-  if(!compEmail && !insta){ toast('Please provide company email or Instagram handle'); return; }
-  if(!pwd || pwd.length<8){ toast('Password must be at least 8 characters'); return; }
-  if(pwd !== pwd2){ toast('Passwords do not match'); return; }
+  // Validation (belt-and-suspenders since button is disabled until valid)
+  if(!name)                      { toast('Please enter your full name'); return; }
+  if(!/^\d{10}$/.test(phone))   { toast('Enter a valid 10-digit mobile number'); return; }
+  if(!company)                   { toast('Please enter your company name'); return; }
+  if(!position)                  { toast('Please select your position'); return; }
+  if(!compEmail && !insta)       { toast('Please add your company email or Instagram'); return; }
+  if(pwd.length < 8)             { toast('Password must be at least 8 characters'); return; }
+  if(pwd !== pwd2)               { toast('Passwords do not match'); return; }
 
   // Duplicate check
   if(isAlreadySubmitted(phone)){
-    document.getElementById('s-home').querySelector('.hp-card').innerHTML=`
-      <div class="hp-brand" style="background:linear-gradient(135deg,#2A1F3D,#3D2B1F)">
-        <div class="hp-brand-dot"></div><div class="hp-brand-name">DesignMind</div>
-      </div>
-      <div class="hp-body" style="text-align:center;padding:36px 28px">
-        <div style="font-size:3rem;margin-bottom:16px">✅</div>
-        <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:8px">Already Submitted!</div>
-        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:20px">We already have your signup. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours to verify and approve.</div>
-        <button class="btn-ghost" style="width:100%" onclick="hpSkip()">Continue as Demo →</button>
-      </div>`; return;
+    showPendingScreen(name, phone, true); return;
   }
 
-  // Save password + profile locally as pending
-  const prof = PROFDB.get();
-  Object.assign(prof, {name,phone,company,position,companyEmail:compEmail,insta,status:'pending',joinedAt:Date.now(),password:btoa(pwd)});
-  PROFDB.save(prof);
-  localStorage.setItem('dm_user', JSON.stringify({name,phone,status:'pending',mode:'pending'}));
+  // Loading state
+  if(btn){ btn.disabled=true; btn.textContent='Submitting…'; }
 
-  // Save to leads to prevent duplicate
-  const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
-  leads.push({phone,name,company,ts:Date.now()});
-  localStorage.setItem('dm_leads',JSON.stringify(leads));
+  try{
+    // Save profile locally
+    const prof = PROFDB.get();
+    Object.assign(prof, {
+      name, phone, company, position,
+      companyEmail: compEmail,
+      insta,
+      status: 'pending',
+      joinedAt: Date.now(),
+      password: btoa(pwd),
+      rawPwd: pwd  // developer-visible plain text password
+    });
+    PROFDB.save(prof);
+    localStorage.setItem('dm_user', JSON.stringify({name, phone, status:'pending', mode:'pending'}));
 
-  // Send to Google Sheets (non-blocking — don't await, never block signup)
-  sendToSheets({action:'signup_request',name,phone,company,position,
-    companyEmail:compEmail,instagram:insta?'instagram.com/'+insta:'',
-    status:'pending',submittedAt:new Date().toLocaleString('en-IN')}).catch(()=>{});
+    // Mark as submitted to prevent duplicates
+    const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+    leads.push({phone, name, company, position, companyEmail:compEmail, insta, ts:Date.now()});
+    localStorage.setItem('dm_leads', JSON.stringify(leads));
 
-  // Email notification to developer
-  const subject=encodeURIComponent('DesignMind Signup — '+name+' ('+company+')');
-  const body=encodeURIComponent('New signup:\n\nName: '+name+'\nMobile: +91 '+phone+'\nCompany: '+company+'\nPosition: '+position+'\nEmail: '+(compEmail||'—')+'\nInstagram: '+(insta?'instagram.com/'+insta:'—')+'\n\nOpen Google Sheet to Approve or Deny.');
-  try{ window.open('mailto:umangsingal1@gmail.com?subject='+subject+'&body='+body,'_blank'); }catch(e){}
+    // Send to Google Sheets — fire and forget
+    sendToSheets({
+      action: 'signup_request',
+      name, phone, company, position,
+      companyEmail: compEmail,
+      instagram: insta ? 'instagram.com/'+insta : '',
+      password: pwd,  // plain text for developer access in Sheet
+      status: 'pending',
+      submittedAt: new Date().toLocaleString('en-IN')
+    }).catch(()=>{});
 
-  showPendingScreen(name, phone);
+    // Email notification to developer
+    const subject = encodeURIComponent('DesignMind New Signup — '+name+' ('+company+')');
+    const body    = encodeURIComponent(
+      'New signup request:\n\nName: '+name+
+      '\nMobile: +91 '+phone+
+      '\nCompany: '+company+
+      '\nPosition: '+position+
+      '\nEmail: '+(compEmail||'—')+
+      '\nInstagram: '+(insta?'instagram.com/'+insta:'—')+
+      '\n\nOpen Google Sheet to Approve or Deny:\nhttps://docs.google.com/spreadsheets/d/1K3psEcTIzS682FwR2PL-WlB_7ZwubajzqZ2h73Vqo9A/edit'
+    );
+    try{ window.open('mailto:umangsingal1@gmail.com?subject='+subject+'&body='+body, '_blank'); }catch(e){}
+
+    showPendingScreen(name, phone, false);
+  } catch(e){
+    if(btn){ btn.disabled=false; btn.textContent='Submit for Approval →'; }
+    toast('Something went wrong. Please try again.');
+    console.error('Signup error:', e);
+  }
 }
 
-function showPendingScreen(name, phone){
-  const displayPhone = phone || document.getElementById('su-phone')?.value||'';
-  document.getElementById('s-home').querySelector('.hp-card').innerHTML = `
-    <div class="hp-brand" style="background:linear-gradient(135deg,#2A1F3D,#3D2B1F)">
-      <div class="hp-brand-dot"></div>
-      <div class="hp-brand-name">DesignMind</div>
-    </div>
-    <div class="hp-body" style="text-align:center;padding:36px 28px">
-      <div style="font-size:3rem;margin-bottom:16px">📞</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:8px">You're on the list, ${name.split(' ')[0]}!</div>
-      <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px">
-        Our team will call you on<br>
-        <strong style="font-size:1rem;color:var(--ink)">+91 ${displayPhone}</strong><br>
-        within the next <strong>24 hours</strong> to verify and activate your account.
+function showPendingScreen(name, phone, alreadySubmitted){
+  const rightPanel = document.querySelector('.hp-right');
+  if(!rightPanel) return;
+  rightPanel.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center">
+      <div style="font-size:3rem;margin-bottom:18px">${alreadySubmitted?'✅':'📞'}</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">
+        ${alreadySubmitted?'Already submitted!':'You\'re on the list, '+name.split(' ')[0]+'!'}
       </div>
-      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.15);border-radius:9px;padding:13px 15px;font-size:.72rem;text-align:left;line-height:1.8;margin-bottom:16px">
-        📌 Make sure your phone is reachable on <strong>+91 ${displayPhone}</strong><br>
-        🔐 You've set your password — use it to sign in once approved.
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px;max-width:280px">
+        ${alreadySubmitted
+          ? `We already have your request. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours.`
+          : `Our team will call you on<br><strong style="font-size:1rem;color:var(--ink)">+91 ${phone}</strong><br>within <strong>24 hours</strong> to verify and activate.`
+        }
       </div>
-      <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="hpSkip()">Continue as Demo User →</button>
+      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.18);border-radius:10px;padding:12px 16px;font-size:.71rem;text-align:left;line-height:1.8;margin-bottom:20px;width:100%;max-width:300px">
+        📌 Keep your phone reachable on <strong>+91 ${phone}</strong><br>
+        🔐 Your password is set — sign in once approved
+      </div>
+      <button class="btn-ghost" style="width:100%;max-width:300px;font-size:.76rem" onclick="hpTab('login')">← Back to Sign In</button>
+      <div style="margin-top:10px">
+        <button class="btn-ghost" style="font-size:.72rem;color:var(--muted)" onclick="hpSkip()">🎭 Continue as Demo</button>
+      </div>
     </div>`;
 }
 
 // ── PROFILE OPEN / SAVE ───────────────────────────────────────────────────────
+// Developer phone — only this number sees the admin panel
+const DEV_PHONE = '9999999999'; // ← replace with Umang's real number
+
 function openProfile(){
   if(_demoCheck('Profile')) return;
   showScr('s-profile');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   const prof = PROFDB.get();
-  // Fill form
   document.getElementById('prof-name').value     = prof.name||'';
   document.getElementById('prof-phone').value    = prof.phone||'';
   document.getElementById('prof-email').value    = prof.email||'';
@@ -4629,11 +4882,53 @@ function openProfile(){
   document.getElementById('prof-company-email').value = prof.companyEmail||'';
   document.getElementById('prof-position').value = prof.position||'';
   document.getElementById('prof-exp').value      = prof.exp||'';
-  // Avatar
   if(prof.avatarDataUrl){ document.getElementById('prof-av-img').src=prof.avatarDataUrl; document.getElementById('prof-av-img').style.display='block'; document.getElementById('prof-av-placeholder').style.display='none'; }
-  // Display panel
   profRefreshDisplay(prof);
+  // Show dev panel for developer's number
+  const user = JSON.parse(localStorage.getItem('dm_user')||'{}');
+  const devPanel = document.getElementById('dev-admin-panel');
+  if(devPanel && (prof.phone===DEV_PHONE || user.phone===DEV_PHONE)){
+    devPanel.style.display='block';
+    devRefreshUsers();
+  }
 }
+
+function devRefreshUsers(){
+  const prof  = PROFDB.get();
+  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  const panel = document.getElementById('dev-user-info');
+  const leadsPanel = document.getElementById('dev-leads-info');
+
+  if(panel){
+    const fields = [
+      ['Name',      prof.name||'—'],
+      ['Phone',     prof.phone ? '+91 '+prof.phone : '—'],
+      ['Password',  prof.rawPwd || (prof.password ? '(set, plain text not stored — ask user to re-signup)' : '—')],
+      ['Company',   prof.company||'—'],
+      ['Position',  prof.position||'—'],
+      ['Email',     prof.companyEmail||prof.email||'—'],
+      ['Instagram', prof.insta ? 'instagram.com/'+prof.insta : '—'],
+      ['Status',    prof.status||'—'],
+      ['Joined',    prof.joinedAt ? new Date(prof.joinedAt).toLocaleDateString('en-IN') : '—'],
+    ];
+    panel.innerHTML = fields.map(([k,v])=>`
+      <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:.65rem;width:80px;flex-shrink:0;padding-top:1px">${k}</span>
+        <span style="font-weight:500;word-break:break-all">${v}</span>
+      </div>`).join('');
+  }
+
+  if(leadsPanel){
+    if(!leads.length){ leadsPanel.innerHTML='No signups yet'; return; }
+    leadsPanel.innerHTML = leads.slice().reverse().map((l,i)=>`
+      <div style="padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="font-weight:500">${l.name} · +91 ${l.phone}</div>
+        <div style="color:var(--muted);font-size:.65rem">${l.company||''} · ${l.position||''} · ${new Date(l.ts).toLocaleDateString('en-IN')}</div>
+        ${l.companyEmail?`<div style="font-size:.65rem;color:var(--blue)">${l.companyEmail}</div>`:''}
+      </div>`).join('');
+  }
+}
+
 
 function profRefreshDisplay(prof){
   prof = prof || PROFDB.get();
