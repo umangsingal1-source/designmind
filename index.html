@@ -356,8 +356,74 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink2);color:var(--bg);padding:9px 18px;border-radius:100px;font-size:.76rem;opacity:0;transition:all .35s cubic-bezier(.22,1,.36,1);z-index:500;white-space:nowrap;box-shadow:var(--shl);}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-@media(max-width:900px){.page{padding:26px 18px;}.nav{padding:0 18px;}.api-banner{padding:10px 18px;}.bg2{grid-template-columns:1fr;}.rg{grid-template-columns:1fr 1fr;}.trio{grid-template-columns:1fr 1fr;}.rf-grid{grid-template-columns:1fr 1fr;}.bfr{grid-template-columns:1fr;}}
-@media(max-width:580px){.rg{grid-template-columns:1fr;}.trio{grid-template-columns:1fr;}.stepper::before{display:none;}.sl{display:none;}.prop-grid{grid-template-columns:repeat(2,1fr);}.rf-grid,.rf-2{grid-template-columns:1fr;}.api-banner{flex-wrap:wrap;}.api-inp{width:100%;}}
+/* ═══ MOBILE UI ═══ */
+@media(max-width:900px){
+  .page{padding:20px 16px;}
+  .nav{padding:0 16px;height:58px;}
+  .nav-links{display:none;} /* hidden — replaced by bottom nav */
+  .api-banner{padding:10px 16px;}
+  .bg2{grid-template-columns:1fr;}
+  .rg{grid-template-columns:1fr 1fr;}
+  .trio{grid-template-columns:1fr 1fr;}
+  .rf-grid{grid-template-columns:1fr 1fr;}
+  .bfr{grid-template-columns:1fr;}
+  .s-head{flex-direction:column;align-items:flex-start;gap:10px;}
+  .s-head>div:last-child{width:100%;display:flex;gap:8px;flex-wrap:wrap;}
+  .s-head>div:last-child .btn,.s-head>div:last-child .btn-ghost{flex:1;text-align:center;}
+  .prof-grid{grid-template-columns:1fr;}
+  .port-hero{padding:22px 18px;}
+  /* Project grid */
+  #pg{grid-template-columns:1fr 1fr!important;}
+  /* BOQ table scroll */
+  .boq-tbl-wrap{overflow-x:auto;}
+  /* Modals full screen on mobile */
+  .ph2-modal{max-width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;}
+  .ph2-ovl{align-items:flex-end;padding:0;}
+  /* snag */
+  .snag-grid{grid-template-columns:1fr!important;}
+}
+@media(max-width:580px){
+  #renders-filters{ grid-template-columns:1fr 1fr!important; }
+}
+  .logo-tag{display:none;}
+  #pg{grid-template-columns:1fr!important;}
+  .rg{grid-template-columns:1fr;}
+  .trio{grid-template-columns:1fr;}
+  .stepper::before{display:none;}
+  .sl{display:none;}
+  .prop-grid{grid-template-columns:repeat(2,1fr);}
+  .rf-grid,.rf-2{grid-template-columns:1fr;}
+  .api-banner{flex-wrap:wrap;}
+  .api-inp{width:100%;}
+  .s-title{font-size:1.5rem;}
+  /* Bottom nav spacing */
+  .scr.on{padding-bottom:72px!important;}
+  .page{padding-bottom:80px!important;}
+  /* Fav grid */
+  .fav-grid{grid-template-columns:repeat(2,1fr);}
+  /* Port proj grid */
+  .port-proj-grid{grid-template-columns:1fr!important;}
+  /* Lib tabs scroll */
+  .lib-source-tabs{overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;}
+  .lib-stab{white-space:nowrap;flex-shrink:0;}
+}
+
+/* ── BOTTOM NAV BAR (mobile only) ── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(247,244,239,.97);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);
+  padding:8px 0 env(safe-area-inset-bottom,8px);
+  box-shadow:0 -4px 20px rgba(28,26,23,.08);
+}
+.bottom-nav-items{display:flex;justify-content:space-around;align-items:center;}
+.bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;cursor:pointer;border-radius:10px;transition:all .18s;min-width:52px;border:none;background:none;font-family:'Outfit',sans-serif;}
+.bn-item.active .bn-icon{background:var(--ink);color:var(--bg);}
+.bn-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .18s;background:transparent;}
+.bn-label{font-size:.55rem;color:var(--muted);font-weight:500;letter-spacing:.3px;transition:color .18s;}
+.bn-item.active .bn-label{color:var(--ink);}
+@media(max-width:900px){.bottom-nav{display:block;}}
 
 /* ═══════════════ PHASE 2: CLIENT RENDERS ═══════════════ */
 .ph2-ovl{position:fixed;inset:0;background:rgba(28,26,23,.55);backdrop-filter:blur(8px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
@@ -826,7 +892,33 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 </head>
 <body>
 
-<!-- ═══ HOMEPAGE / AUTH ═══ -->
+<!-- ══ BOTTOM NAV (mobile) ══ -->
+<nav class="bottom-nav" id="bottomNav">
+  <div class="bottom-nav-items">
+    <button class="bn-item active" id="bn-projects" onclick="goHome();bnSetActive('bn-projects')">
+      <div class="bn-icon">🏡</div>
+      <span class="bn-label">Projects</span>
+    </button>
+    <button class="bn-item" id="bn-library" onclick="openLibrary();bnSetActive('bn-library')">
+      <div class="bn-icon">🖼️</div>
+      <span class="bn-label">Library</span>
+    </button>
+    <button class="bn-item" id="bn-boq" onclick="openBOQ();bnSetActive('bn-boq')">
+      <div class="bn-icon">📋</div>
+      <span class="bn-label">BOQ</span>
+    </button>
+    <button class="bn-item" id="bn-portfolio" onclick="openPortfolio();bnSetActive('bn-portfolio')">
+      <div class="bn-icon">🎨</div>
+      <span class="bn-label">Portfolio</span>
+    </button>
+    <button class="bn-item" id="bn-profile" onclick="openProfile();bnSetActive('bn-profile')">
+      <div class="bn-icon">👤</div>
+      <span class="bn-label">Profile</span>
+    </button>
+  </div>
+</nav>
+
+
 <div id="s-home" class="on">
   <div class="hp-hero">
     <div class="hp-card">
@@ -843,27 +935,22 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       <!-- LOGIN PANEL -->
       <div id="hp-login" class="hp-body">
         <div class="hp-title">Welcome back</div>
-        <div class="hp-sub">Enter your mobile number to sign in</div>
+        <div class="hp-sub">Sign in to your DesignMind account</div>
         <div class="fg">
           <label class="fl">Mobile Number</label>
           <div style="display:flex;gap:8px">
             <input class="fi" style="max-width:70px;text-align:center" value="+91" readonly>
-            <input class="fi" id="login-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1" oninput="hpPhoneInput(this,'login-otp-wrap','login-send-btn')">
+            <input class="fi" id="login-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1">
           </div>
         </div>
-        <div id="login-otp-wrap" style="display:none">
-          <div class="fg">
-            <label class="fl">OTP sent to your number</label>
-            <input class="fi hp-otp-inp" id="login-otp" type="text" placeholder="· · · ·" maxlength="4">
-            <div class="hp-otp-hint">⚡ Demo OTP is <strong>1234</strong> — in production this will be sent via SMS</div>
-          </div>
+        <div class="fg">
+          <label class="fl">Password</label>
+          <input class="fi" id="login-pwd" type="password" placeholder="Enter your password">
         </div>
-        <div id="login-send-btn" style="display:none;margin-bottom:12px">
-          <button class="btn" style="width:100%;background:#B8884A" onclick="hpSendOTP('login')">Send OTP →</button>
-        </div>
-        <button class="btn" style="width:100%;background:var(--ink)" onclick="hpVerifyOTP('login')" id="login-verify-btn" style="display:none">Sign In →</button>
+        <button class="btn" style="width:100%;background:var(--ink);margin-top:4px" onclick="hpLoginPassword()">Sign In →</button>
         <div class="hp-divider"><span>or</span></div>
         <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="hpSkip()">Continue as Demo User →</button>
+        <div style="text-align:center;margin-top:10px;font-size:.7rem;color:var(--muted)">Don't have an account? <span style="color:var(--gold);cursor:pointer;font-weight:500" onclick="hpTab('signup')">Request Access →</span></div>
       </div>
 
       <!-- SIGNUP PANEL -->
@@ -889,7 +976,12 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
           <div style="display:flex;gap:8px;align-items:center"><span style="font-size:.78rem;color:var(--muted);flex-shrink:0;padding-top:1px">instagram.com/</span><input class="fi" id="su-insta" placeholder="yourstudiohandle" style="flex:1"></div>
         </div>
         <div style="background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.15);border-radius:9px;padding:10px 13px;font-size:.7rem;color:var(--ink2);line-height:1.7;margin:10px 0">
-          🔐 <strong>Manual approval:</strong> Umang reviews every request and approves within <strong>24 hours</strong>. You'll receive a confirmation on your mobile number.
+          📞 <strong>Manual approval:</strong> Once you submit, our team will call you on your mobile number within <strong>24 hours</strong> to verify and approve your account.
+        </div>
+        <div style="font-size:.65rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--rust);margin:14px 0 10px">Set Your Password</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg"><label class="fl">Password <span style="color:#A84D3A">*</span></label><input class="fi" id="su-pwd" type="password" placeholder="Min 8 characters"></div>
+          <div class="fg"><label class="fl">Confirm Password <span style="color:#A84D3A">*</span></label><input class="fi" id="su-pwd2" type="password" placeholder="Repeat password"></div>
         </div>
         <button class="btn" style="width:100%;background:#5E7260;margin-top:4px" onclick="hpSubmitSignup()">Submit for Approval →</button>
         <div class="hp-divider"><span>or</span></div>
@@ -916,7 +1008,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     <li class="nlink" onclick="openBOQ()">BOQ & Costs</li>
     <li class="nlink" onclick="openSnagList()">Snag List</li>
     <li class="nlink" onclick="openPortfolio()">My Portfolio</li>
-    <li class="nlink" onclick="toast('AI Tools — coming soon!')">AI Tools</li>
+    <li class="nlink" onclick="openPlugins()">Plugins</li>
   </ul>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="notif-bell-wrap" onclick="openNotifPanel()">
@@ -944,11 +1036,11 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     <div><h1 class="s-title">My <em>Projects</em></h1><p class="s-sub">All active and completed design projects</p></div>
     <button class="btn" onclick="openModal()">+ Add Project</button>
   </div>
-  <div class="stats">
-    <div class="stat"><div class="sdot" style="background:var(--gold)"></div><strong>5</strong> Active</div>
-    <div class="stat"><div class="sdot" style="background:var(--sage)"></div><strong>2</strong> On Site</div>
-    <div class="stat"><div class="sdot" style="background:var(--rust)"></div><strong>4</strong> Snags</div>
-    <div class="stat"><div class="sdot" style="background:var(--blue)"></div><strong>₹1.4Cr</strong> BOQ</div>
+  <div class="stats" id="proj-stats">
+    <div class="stat"><div class="sdot" style="background:var(--gold)"></div><strong id="stat-active">0</strong> Active</div>
+    <div class="stat"><div class="sdot" style="background:var(--sage)"></div><strong id="stat-onsite">0</strong> On Site</div>
+    <div class="stat"><div class="sdot" style="background:var(--rust)"></div><strong id="stat-snags">0</strong> Snags</div>
+    <div class="stat"><div class="sdot" style="background:var(--blue)"></div><strong id="stat-boq">₹0</strong> BOQ</div>
   </div>
   <div class="search-wrap">
     <span class="search-ico">🔍</span>
@@ -1168,15 +1260,22 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 
   <!-- ── MY RENDERS TAB (AI tagged) ── -->
   <div id="lib-renders-panel" style="display:none">
-    <div style="background:rgba(58,107,138,.06);border:1px solid rgba(58,107,138,.15);border-radius:12px;padding:13px 18px;margin-bottom:18px">
+    <div style="background:rgba(58,107,138,.06);border:1px solid rgba(58,107,138,.15);border-radius:12px;padding:13px 18px;margin-bottom:16px">
       <div style="font-size:.82rem;font-weight:500;margin-bottom:3px">📸 AI-Analysed Render Library</div>
-      <div style="font-size:.71rem;color:var(--muted);line-height:1.6">When you upload renders to any project, Claude analyses the design language (style, palette, mood, materials) and stores them here for inspiration and reuse across projects.</div>
+      <div style="font-size:.71rem;color:var(--muted);line-height:1.6">Upload renders in <strong>Client Renders</strong> → Claude automatically analyses style, palette, mood, materials and stores them here. Use the filters below to find inspiration across all projects.</div>
     </div>
-    <div id="lib-renders-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:13px">
+    <!-- Filters -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:16px" id="renders-filters">
+      <input class="fi" id="renders-filter-style" placeholder="Style…" style="font-size:.72rem" oninput="loadAIRendersLibrary()">
+      <input class="fi" id="renders-filter-room"  placeholder="Room…"  style="font-size:.72rem" oninput="loadAIRendersLibrary()">
+      <input class="fi" id="renders-filter-mood"  placeholder="Mood…"  style="font-size:.72rem" oninput="loadAIRendersLibrary()">
+      <input class="fi" id="renders-filter-text"  placeholder="Search tags, materials…" style="font-size:.72rem" oninput="loadAIRendersLibrary()">
+    </div>
+    <div id="lib-renders-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:13px">
       <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">
         <div style="font-size:2rem;margin-bottom:10px">📸</div>
         <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No renders analysed yet</div>
-        <div style="font-size:.76rem;margin-top:5px">Upload renders in any project → Claude tags style, palette, mood automatically</div>
+        <div style="font-size:.76rem;margin-top:5px">Go to Client Renders → upload images → Claude tags them automatically</div>
       </div>
     </div>
   </div>
@@ -1756,6 +1855,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
         <div style="padding:14px 18px;display:flex;flex-direction:column;gap:8px">
           <button class="btn" style="width:100%;background:var(--ink);font-size:.74rem" onclick="openPortfolio()">🎨 View My Portfolio →</button>
           <button class="btn-ghost" style="width:100%;font-size:.74rem" onclick="openFavourites()">❤️ My Favourites</button>
+          <button class="btn-ghost" style="width:100%;font-size:.74rem;color:#A84D3A;border-color:rgba(168,77,58,.3)" onclick="hpSignOut()">↩ Sign Out</button>
         </div>
       </div>
 
@@ -1982,6 +2082,70 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       <button class="btn" style="background:#5E7260" onclick="portShareWhatsApp()">📲 WhatsApp</button>
       <button class="btn" style="background:#B8884A" onclick="copyPortfolioLink()">📋 Copy</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN: PLUGINS ══ -->
+<div class="scr" id="s-plugins">
+  <div class="s-head">
+    <div><h1 class="s-title">Plugins <em>& Integrations</em></h1><p class="s-sub">Extend DesignMind with powerful add-ons — coming soon</p></div>
+    <button class="btn-ghost" onclick="goHome()">← Back</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:32px">
+    <!-- Each plugin card -->
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">📐</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">3D Floor Planner</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Sketch room layouts, place furniture, and export to PDF — directly inside DesignMind.</div>
+      <span style="background:var(--gold-bg);color:var(--gold);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming Q3 2026</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">✍️</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">Contracts & e-Sign</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Create design agreements, send to clients for digital signature, and store signed copies.</div>
+      <span style="background:var(--gold-bg);color:var(--gold);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming Q3 2026</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">🏪</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">Indian Supplier Catalogue</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Browse verified Indian furniture, fabric, and material suppliers. Add directly to BOQ.</div>
+      <span style="background:var(--sage-bg);color:var(--sage);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming Q4 2026</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">💳</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">Razorpay Payments</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Collect client payments online, auto-reconcile with BOQ, generate GST receipts.</div>
+      <span style="background:var(--sage-bg);color:var(--sage);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming Q4 2026</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">🧾</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">GST Invoice Generator</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Generate GST-compliant invoices from BOQ data. Auto-fill GSTIN, HSN codes, tax slabs.</div>
+      <span style="background:var(--sage-bg);color:var(--sage);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming Q4 2026</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">🪑</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">AR Furniture Preview</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Point phone camera at a room and see furniture placed in real scale using augmented reality.</div>
+      <span style="background:var(--blue-bg);color:var(--blue);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming 2027</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">🤖</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">AI Room Redesign</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Upload a room photo, choose a style, and AI generates a redesigned version instantly.</div>
+      <span style="background:var(--blue-bg);color:var(--blue);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming 2027</span>
+    </div>
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:22px;box-shadow:var(--sh);opacity:.7">
+      <div style="font-size:2rem;margin-bottom:10px">📊</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:400;margin-bottom:4px">Business Analytics</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:12px;line-height:1.6">Revenue tracking, project profitability, client acquisition insights, and designer benchmarks.</div>
+      <span style="background:var(--blue-bg);color:var(--blue);border-radius:100px;padding:3px 10px;font-size:.63rem;font-weight:600">Coming 2027</span>
+    </div>
+  </div>
+  <div style="background:linear-gradient(135deg,var(--ink2),#3D2B1F);border-radius:14px;padding:24px 28px;color:#F7F4EF;text-align:center">
+    <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:6px">Have an idea for a plugin?</div>
+    <div style="font-size:.76rem;color:rgba(255,255,255,.6);margin-bottom:14px">Tell us what tools would make your workflow better</div>
+    <a href="mailto:umangsingal1@gmail.com?subject=DesignMind Plugin Idea" class="btn" style="background:#B8884A;color:white;text-decoration:none;display:inline-block">📩 Suggest a Plugin</a>
   </div>
 </div>
 
@@ -2497,13 +2661,7 @@ function libClear(){
 ═══════════════════════════════════════════════════════════════════ */
 let propSel=null, rooms=[], bpB64=null, wizProj={}, shuffleOff=0;
 
-const PROJS=[
-  {id:'mehta',name:'Mehta Residence',type:'flat',icon:'🏠',label:'Flat',color:'gold',loc:'Juhu, Mumbai',bud:'₹18L',phase:'Phase 3 · Design',pct:45},
-  {id:'sharma',name:'Sharma Villa',type:'villa',icon:'🏡',label:'Villa',color:'sage',loc:'Lonavala',bud:'₹55L',phase:'Phase 2 · Discovery',pct:10},
-  {id:'axiom',name:'Axiom Technologies',type:'office',icon:'🏢',label:'Office',color:'blue',loc:'Andheri, Mumbai',bud:'₹32L',phase:'Phase 6 · Execution',pct:72},
-  {id:'roost',name:'The Roost Café',type:'commercial',icon:'☕',label:'Commercial',color:'rust',loc:'Bandra, Mumbai',bud:'₹12L',phase:'Phase 5 · Procurement',pct:65},
-  {id:'kapoor',name:'Kapoor Apartment',type:'flat',icon:'✨',label:'Flat',color:'rust',loc:'Worli, Mumbai',bud:'₹22L',phase:'Phase 8 · Handover',pct:92},
-];
+const PROJS=[]; // No sample projects — designers add their own
 
 const ICONS={'bath':'🚿','toilet':'🚿','wash':'🚿','living':'🛋️','lounge':'🛋️','hall':'🛋️','master':'🛏️','bed':'🛏️','guest':'🛏️','kitchen':'🍳','din':'🪑','dining':'🪑','balc':'🌿','terr':'🌅','study':'📚','office':'💼','work':'💼','store':'📦','pooja':'🪔','puja':'🪔','corr':'🚶'};
 function ricon(n){n=(n||'').toLowerCase();for(const[k,v]of Object.entries(ICONS))if(n.includes(k))return v;return'🏠';}
@@ -2513,7 +2671,7 @@ addEventListener('DOMContentLoaded',()=>{
   // Update lib count displays
   document.querySelectorAll('#lib-total-badge,#lib-count-display,#lib-stat-count')
     .forEach(el=>el&&(el.textContent=IMG_DB.length));
-  setTimeout(()=>toast('✦ Welcome to DesignMind · '+IMG_DB.length+' interior photos ready'),700);
+  setTimeout(()=>{ const prof=PROFDB.get(); toast('✦ Welcome'+(prof.name?' back, '+prof.name.split(' ')[0]:'')+' · DesignMind'); },700);
 });
 
 /* ─── Projects ──────────────────────────────────────────────────────────────── */
@@ -2521,8 +2679,23 @@ const CF={gold:'pf-gold',sage:'pf-sage',blue:'pf-blue',rust:'pf-rust'};
 const CP={gold:'pp-gold',sage:'pp-sage',blue:'pp-blue',rust:'pp-rust'};
 const CB={flat:'b-flat',villa:'b-villa',office:'b-office',commercial:'b-commercial',warehouse:'b-other',other:'b-other'};
 function renderProjs(){
-  const g=document.getElementById('pg');g.querySelectorAll('.pc').forEach(c=>c.remove());
-  PROJS.forEach(p=>g.insertBefore(mkPC(p),g.querySelector('.add-card')));
+  const g=document.getElementById('pg');
+  g.querySelectorAll('.pc').forEach(c=>c.remove());
+  g.querySelectorAll('.empty-state').forEach(c=>c.remove());
+  const allProjs=[...PROJS,...RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',label:p.type||'Project',color:'gold',loc:p.client||'—',bud:'—',phase:'Active',pct:0,type:p.type}))];
+  if(!allProjs.length){
+    const empty=document.createElement('div');
+    empty.className='empty-state';
+    empty.style.cssText='grid-column:1/-1;text-align:center;padding:60px 20px;';
+    empty.innerHTML=`<div style="font-size:3rem;margin-bottom:16px">🏡</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:8px">No projects yet</div>
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:22px">Create your first project to get started</div>
+      <button class="btn" style="background:#B8884A" onclick="openModal()">+ Create First Project</button>`;
+    g.insertBefore(empty, g.querySelector('.add-card'));
+    return;
+  }
+  allProjs.forEach(p=>g.insertBefore(mkPC(p),g.querySelector('.add-card')));
+  if(typeof updateProjStats==='function') updateProjStats();
 }
 function mkPC(p){
   const d=document.createElement('div');d.className='pc';
@@ -2937,6 +3110,7 @@ function ph2OvlClick(e,id){ if(e.target===document.getElementById(id)) ph2Close(
 
 // ── Open Renders Hub ─────────────────────────────────────────────────────────
 function openRendersHub(){
+  if(_demoCheck('Client Renders')) return;
   showScr('s-renders');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.getElementById('navLinks').children[2]?.classList.add('active');
@@ -3537,101 +3711,6 @@ const RENDER_TAGS = {
   add(entry){ const all=RENDER_TAGS.get(); all.unshift(entry); if(all.length>200) all.splice(200); RENDER_TAGS.save(all); },
 };
 
-async function analyseRenderImage(imgId, projId, projName, dataUrl){
-  try{
-    // Detect media type from data URL header
-    const mediaType = dataUrl.startsWith('data:image/png') ? 'image/png'
-                    : dataUrl.startsWith('data:image/webp') ? 'image/webp'
-                    : dataUrl.startsWith('data:image/gif') ? 'image/gif'
-                    : 'image/jpeg';
-    const b64 = dataUrl.split(',')[1];
-    if(!b64){ console.warn('Render analysis: no base64 data'); return; }
-
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:800,
-        system:'You are an interior design expert. Analyse the render image and return ONLY valid JSON — no markdown, no explanation, no code fences. Return exactly this shape: {"style":"Contemporary","palette":["#B5A48A","#F2EDE4","#3D2B1F"],"mood":"Warm & Cozy","materials":["marble","wood"],"room":"Living Room","tags":["open plan","neutral tones","natural light"]}',
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image', source:{type:'base64', media_type:mediaType, data:b64}},
-            {type:'text', text:'Analyse this interior design render. Return ONLY the JSON object — keep values short (max 2-3 words each, max 3 items per array).'}
-          ]
-        }]
-      })
-    });
-
-    // Check HTTP status first
-    if(!res.ok){
-      const errText = await res.text();
-      console.warn('Render analysis HTTP error:', res.status, errText.slice(0,200));
-      return;
-    }
-
-    const data = await res.json();
-
-    // Guard against API error responses
-    if(data.error){ console.warn('Render analysis API error:', data.error.message); return; }
-    if(!data.content || !data.content.length){ console.warn('Render analysis: empty content'); return; }
-
-    // Extract text, strip any accidental markdown fences
-    let text = data.content.map(b=>b.text||'').join('').trim();
-    text = text.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-
-    // Find JSON object
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if(!jsonMatch){ console.warn('Render analysis: no JSON found in response:', text.slice(0,100)); return; }
-
-    let jsonStr = jsonMatch[0];
-
-    // Repair truncated JSON — if it's cut off, try to close it gracefully
-    try{
-      JSON.parse(jsonStr); // try as-is first
-    } catch(parseErr){
-      // Count open braces/brackets and close them
-      const opens = (jsonStr.match(/\[/g)||[]).length - (jsonStr.match(/\]/g)||[]).length;
-      const openBraces = (jsonStr.match(/\{/g)||[]).length - (jsonStr.match(/\}/g)||[]).length;
-      // Remove trailing incomplete key/value (e.g. ,"tags":["op)
-      jsonStr = jsonStr.replace(/,\s*"[^"]*"\s*:\s*[^,}\]]*$/, '');
-      jsonStr = jsonStr.replace(/,\s*"[^"]*"\s*$/, '');
-      jsonStr = jsonStr.replace(/,\s*$/, '');
-      for(let i=0;i<opens;i++) jsonStr += ']';
-      for(let i=0;i<openBraces;i++) jsonStr += '}';
-    }
-
-    const tags = JSON.parse(jsonStr);
-    RENDER_TAGS.add({imgId, projId, projName, dataUrl, analysedAt:Date.now(), ...tags});
-    console.log('✦ Render tagged:', tags.style, tags.mood, tags.room);
-  } catch(e){
-    console.warn('Render analysis failed:', e.message);
-  }
-}
-
-// Hook into existing rhuConfirm to trigger AI analysis
-const _origRhuConfirm = window.rhuConfirm;
-// We'll patch rhuConfirm after page load in DOMContentLoaded
-
-async function loadAIRendersLibrary(){
-  const grid = document.getElementById('lib-renders-grid');
-  const tags = RENDER_TAGS.get();
-  if(!tags.length){ grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px">📸</div><div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No renders analysed yet</div><div style="font-size:.76rem;margin-top:5px">Upload renders in any project → Claude tags style, palette, mood automatically</div></div>`; return; }
-  grid.innerHTML=tags.map(t=>`
-    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(28,26,23,.06)">
-      <img src="${t.dataUrl}" style="width:100%;height:160px;object-fit:cover;cursor:pointer" onclick="openLB('${t.dataUrl}','${t.projName||'Project'} Render')" loading="lazy">
-      <div style="padding:10px 12px">
-        <div style="font-size:.75rem;font-weight:500;margin-bottom:4px">${t.style||'—'} · ${t.room||'Room'}</div>
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">${t.mood||''}${t.projName?' · '+t.projName:''}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${(t.palette||[]).map(c=>`<span style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid var(--border);display:inline-block;flex-shrink:0" title="${c}"></span>`).join('')}
-          ${(t.tags||[]).slice(0,3).map(tag=>`<span style="background:var(--bg2);border-radius:100px;padding:2px 7px;font-size:.58rem;color:var(--muted)">${tag}</span>`).join('')}
-        </div>
-      </div>
-    </div>`).join('');
-}
-
 // ── Homepage Auth ─────────────────────────────────────────────────────────────
 function hpTab(tab){
   document.getElementById('hp-login').style.display=tab==='login'?'block':'none';
@@ -3646,104 +3725,370 @@ function hpPhoneInput(inp, otpWrapId, sendBtnId){
   document.getElementById(otpWrapId).style.display='none';
 }
 
-function hpSendOTP(mode){
-  const phone = document.getElementById(mode==='login'?'login-phone':'su-phone').value.trim();
-  if(!/^\d{10}$/.test(phone)){toast('Enter a valid 10-digit number');return;}
-  const wrapId = mode==='login'?'login-otp-wrap':'su-otp-wrap';
-  const sendId = mode==='login'?'login-send-btn':'su-send-btn';
-  document.getElementById(wrapId).style.display='block';
-  document.getElementById(sendId).style.display='none';
-  toast('📱 OTP sent! (Demo OTP: 1234)');
+// ── PASSWORD LOGIN ────────────────────────────────────────────────────────────
+function hpLoginPassword(){
+  const phone = document.getElementById('login-phone').value.trim();
+  const pwd   = document.getElementById('login-pwd').value;
+  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number'); return; }
+  if(!pwd){ toast('Please enter your password'); return; }
+  const prof = PROFDB.get();
+  if(!prof.phone){ toast('No account found. Please sign up first.'); return; }
+  if(prof.phone !== phone){ toast('No account found for this number.'); return; }
+  if(prof.status==='pending'){ toast('⏳ Your account is pending — we\'ll call you within 24 hours.'); return; }
+  if(prof.status==='denied'){ toast('❌ Account not approved. Email umangsingal1@gmail.com'); return; }
+  if(!prof.password){ toast('No password set. Please contact support.'); return; }
+  if(prof.password !== btoa(pwd)){ toast('Incorrect password. Please try again.'); return; }
+  localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
+  profRefreshDisplay();
+  toast('👋 Welcome back, '+(prof.name||'Designer').split(' ')[0]+'!');
+  hpEnterApp(false);
 }
 
-function hpVerifyOTP(mode){
-  const otp = document.getElementById(mode==='login'?'login-otp':'su-otp').value.trim();
-  if(otp!=='1234'){toast('⚠️ Incorrect OTP. Demo OTP is 1234');return;}
-  if(mode==='signup'){
-    const name    = document.getElementById('su-name').value.trim();
-    const phone   = document.getElementById('su-phone').value.trim();
-    const website = document.getElementById('su-website').value.trim();
-    if(!name){toast('Please enter your name');return;}
-    // Send signup data to developer via EmailJS / mailto fallback
-    hpSendSignupEmail(name, phone, website);
-    localStorage.setItem('dm_user', JSON.stringify({name,phone,website,joinedAt:Date.now()}));
-    document.getElementById('navAv').textContent = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    toast('🎉 Welcome '+name.split(' ')[0]+'! Account created.');
-  } else {
-    const phone = document.getElementById('login-phone').value.trim();
-    const saved = JSON.parse(localStorage.getItem('dm_user')||'{}');
-    if(saved.phone===phone){ document.getElementById('navAv').textContent=(saved.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'SA'; toast('👋 Welcome back, '+(saved.name||'Designer')+'!'); }
-    else { toast('👋 Welcome back!'); }
-  }
-  hpEnterApp();
+// ── SIGN OUT ──────────────────────────────────────────────────────────────────
+function hpSignOut(){
+  // confirm() can be blocked in some browsers — use custom modal instead
+  const modal = document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.55);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML=`<div style="background:#FDFCFA;border-radius:16px;padding:28px 24px;max-width:320px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(28,26,23,.25)">
+    <div style="font-size:2rem;margin-bottom:10px">↩</div>
+    <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300;margin-bottom:8px">Sign out?</div>
+    <div style="font-size:.76rem;color:var(--muted);margin-bottom:22px;line-height:1.6">You'll need your mobile number and password to sign back in.</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-ghost" style="flex:1" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn" style="flex:1;background:#A84D3A" onclick="doSignOut()">Sign Out</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
 }
 
-function hpSendSignupEmail(name, phone, website){
-  // Opens mailto as fallback — in production replace with EmailJS or backend API
-  const subject = encodeURIComponent('DesignMind New Signup — '+name);
-  const body = encodeURIComponent(`New designer signed up on DesignMind!\n\nName: ${name}\nMobile: +91 ${phone}\nWebsite/Portfolio: ${website||'Not provided'}\nDate: ${new Date().toLocaleString('en-IN')}\n\nLog in to DesignMind to manage this account.`);
-  // Silent attempt — open in background tab, user won't notice
-  try{ window.open(`mailto:umangsingal1@gmail.com?subject=${subject}&body=${body}`,'_blank'); }catch(e){}
-  // Also store locally
-  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
-  leads.push({name,phone,website,ts:Date.now()});
-  localStorage.setItem('dm_leads',JSON.stringify(leads));
+function doSignOut(){
+  localStorage.removeItem('dm_user');
+  location.reload();
 }
 
+// ── DEMO SKIP ─────────────────────────────────────────────────────────────────
+let IS_DEMO = false;
 function hpSkip(){
-  // Demo user — enter app without login
-  toast('✦ Entering DesignMind as Demo User');
-  hpEnterApp();
+  IS_DEMO = true;
+  localStorage.setItem('dm_user', JSON.stringify({name:'Demo User',phone:'',status:'demo',mode:'demo'}));
+  document.getElementById('navAv').textContent='DU';
+  hpEnterApp(true);
+  setTimeout(()=>{
+    const b=document.createElement('div');
+    b.id='demo-banner';
+    b.style.cssText='background:#B8884A;color:#fff;text-align:center;padding:7px 16px;font-size:.72rem;position:sticky;top:58px;z-index:99;';
+    b.innerHTML='🎭 <strong>Demo Mode</strong> — Phase 1 only · <span style="text-decoration:underline;cursor:pointer;font-weight:600" onclick="location.reload()">Sign up for full access →</span>';
+    document.getElementById('mainNav')?.after(b);
+  },500);
 }
 
-function hpEnterApp(){
-  const home = document.getElementById('s-home');
-  home.style.opacity='0';
-  home.style.transition='opacity .4s';
-  setTimeout(()=>{ home.classList.remove('on'); home.style.display='none'; },400);
+// Intercept restricted screens in demo mode
+function _demoCheck(featureName){
+  const user=JSON.parse(localStorage.getItem('dm_user')||'{}');
+  if(user.mode==='demo'){ toast('🔒 '+featureName+' — sign up for full access'); return true; }
+  return false;
+}
+
+function hpEnterApp(isDemo){
+  IS_DEMO = !!isDemo;
+  const home=document.getElementById('s-home');
+  home.style.opacity='0'; home.style.transition='opacity .4s';
+  setTimeout(()=>{ home.classList.remove('on'); home.style.display='none'; updateProjStats(); },400);
+}
+
+// ── DYNAMIC PROJECT STATS ─────────────────────────────────────────────────────
+function updateProjStats(){
+  const allProjs=[...PROJS,...RH.getProjs()];
+  const realIds = new Set(allProjs.map(p=>p.id));
+
+  // Load snag projects and filter to only real ones (cleans up stale sample data)
+  let snagProjs=JSON.parse(localStorage.getItem('dm_snag_projs')||'[]');
+  snagProjs = snagProjs.filter(sp=> realIds.has(sp.id) || snagProjs.length===0);
+  // If all are stale (no real project matches), treat as 0
+  const validSnagProjs = snagProjs.filter(sp=> realIds.size===0 || realIds.has(sp.id));
+
+  let totalSnags=0;
+  validSnagProjs.forEach(sp=>{
+    try{const snags=JSON.parse(localStorage.getItem('dm_snags_'+sp.id)||'[]');
+    totalSnags+=snags.filter(s=>s.status!=='resolved').length;}catch(e){}
+  });
+  let totalBOQ=0;
+  allProjs.forEach(p=>{
+    try{const d=BOQDB.getData(p.id);(d.items||[]).forEach(i=>totalBOQ+=(parseFloat(i.total)||0));}catch(e){}
+  });
+  const sa=document.getElementById('stat-active'); if(sa) sa.textContent=allProjs.length;
+  const so=document.getElementById('stat-onsite'); if(so) so.textContent=validSnagProjs.length;
+  const sn=document.getElementById('stat-snags');  if(sn) sn.textContent=totalSnags;
+  const sb=document.getElementById('stat-boq');    if(sb) sb.textContent=totalBOQ>0?'₹'+fmt(totalBOQ):'₹0';
 }
 
 // On load: check if already logged in
 addEventListener('DOMContentLoaded',()=>{
+  // ── Clean up stale sample project data from old versions ──────────────────
+  const staleIds = ['mehta','sharma','axiom','roost','kapoor'];
+  const snagProjs = JSON.parse(localStorage.getItem('dm_snag_projs')||'[]');
+  const cleaned = snagProjs.filter(sp=>!staleIds.includes(sp.id));
+  if(cleaned.length !== snagProjs.length) localStorage.setItem('dm_snag_projs', JSON.stringify(cleaned));
+  staleIds.forEach(id=>{
+    ['dm_boq_','dm_snags_','dm_proc_','dm_todos_'].forEach(prefix=>{
+      if(localStorage.getItem(prefix+id)) localStorage.removeItem(prefix+id);
+    });
+  });
+  // ── Auth check ────────────────────────────────────────────────────────────
   const user = JSON.parse(localStorage.getItem('dm_user')||'null');
-  if(user && user.phone){
-    // Already signed up — skip homepage
+  if(user && (user.phone || user.mode==='demo')){
+    IS_DEMO = (user.mode==='demo');
     document.getElementById('s-home').style.display='none';
-    document.getElementById('navAv').textContent=(user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'SA';
+    const prof=PROFDB.get();
+    document.getElementById('navAv').textContent=IS_DEMO?'DU':(prof.name||user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'SA';
+    if(IS_DEMO){
+      setTimeout(()=>{
+        const b=document.createElement('div');b.id='demo-banner';
+        b.style.cssText='background:#B8884A;color:#fff;text-align:center;padding:7px 16px;font-size:.72rem;position:sticky;top:58px;z-index:99;';
+        b.innerHTML='🎭 <strong>Demo Mode</strong> — Phase 1 only · <span style="text-decoration:underline;cursor:pointer;font-weight:600" onclick="location.reload()">Sign up for full access →</span>';
+        document.getElementById('mainNav')?.after(b);
+      },300);
+    }
+    updateProjStats();
   }
 
-  // Patch rhuConfirm to trigger AI render analysis
+  // Patch rhuConfirm to auto-trigger AI analysis after upload
   const origConfirm = window.rhuConfirm;
   if(typeof origConfirm==='function'){
     window.rhuConfirm = async function(){
       await origConfirm();
-      // After upload, find newly added renders and analyse
       setTimeout(async()=>{
         const projId = document.getElementById('rh-proj-sel')?.value;
         if(!projId) return;
         const proj = getAllBOQProjs().find(p=>p.id===projId);
         const imgs = await RH.getProjImgs(projId);
-        const recent = imgs.filter(i=>Date.now()-i.uploadedAt<60000).slice(0,3);
+        const recent = imgs.filter(i=>Date.now()-i.uploadedAt<90000);
         for(const img of recent){
-          toast('🤖 Analysing render design language…');
-          await analyseRenderImage(img.id, projId, proj?.name||'Project', img.dataUrl);
+          await analyseAndStoreRender(img.id, projId, proj?.name||'Project', img.dataUrl);
         }
-      },1500);
+        // Refresh "My Renders" tab count badge
+        updateRendersTabBadge();
+      },1200);
     };
   }
 });
 
+// ══════════════════════════════════════════════════════════════════
+//   RENDER STORAGE, ANALYSIS & IMAGE LIBRARY INTEGRATION
+//   ─────────────────────────────────────────────────────────────
+//   STORAGE MAP:
+//   ┌─ IndexedDB 'designmind_v2' → 'images' store
+//   │    Full-resolution render images (base64 dataUrl)
+//   │    Keyed by: {id, projectId, section, uploadedAt, status}
+//   │    Size: ~200KB–2MB per image
+//   │
+//   ├─ localStorage 'dm_render_tags'
+//   │    AI analysis results (NO image data — just metadata)
+//   │    {imgId, projId, projName, style, palette, mood,
+//   │     materials, room, tags[], analysedAt, dataUrl(thumb)}
+//   │    Size: ~5–10KB per entry (thumbnail + JSON)
+//   │
+//   └─ Image Library "My Renders" tab
+//        Reads from dm_render_tags + shows with style/mood/palette
+//        Heart ❤️ button → saves to dm_favourites
+//        Filters: style, room, mood, text search
+// ══════════════════════════════════════════════════════════════════
+
+async function analyseAndStoreRender(imgId, projId, projName, dataUrl){
+  // Show toast immediately
+  toast('🤖 Analysing render…');
+  try{
+    const mediaType = dataUrl.startsWith('data:image/png')  ? 'image/png'
+                    : dataUrl.startsWith('data:image/webp') ? 'image/webp'
+                    : dataUrl.startsWith('data:image/gif')  ? 'image/gif'
+                    : 'image/jpeg';
+    const b64 = dataUrl.split(',')[1];
+    if(!b64) return;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:500,
+        system:'You are an interior design expert. Analyse the render and return ONLY valid JSON, no markdown, no explanation. Shape: {"style":"Contemporary","palette":["#B5A48A","#F2EDE4","#3D2B1F"],"mood":"Warm & Cozy","materials":["marble","wood"],"room":"Living Room","tags":["open plan","neutral tones"]}',
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
+          {type:'text',text:'Analyse this interior design render. Return ONLY the JSON — max 2-3 words per value, max 3 items per array.'}
+        ]}]
+      })
+    });
+
+    if(!res.ok) return;
+    const apiData = await res.json();
+    if(apiData.error || !apiData.content?.length) return;
+
+    let text = apiData.content.map(b=>b.text||'').join('').trim()
+                .replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    const m = text.match(/\{[\s\S]*\}/);
+    if(!m) return;
+
+    let jsonStr = m[0];
+    try{ JSON.parse(jsonStr); }
+    catch(e){
+      const opens=(jsonStr.match(/\[/g)||[]).length-(jsonStr.match(/\]/g)||[]).length;
+      const brace=(jsonStr.match(/\{/g)||[]).length-(jsonStr.match(/\}/g)||[]).length;
+      jsonStr=jsonStr.replace(/,\s*"[^"]*"\s*:\s*[^,}\]]*$/,'').replace(/,\s*"[^"]*"\s*$/,'').replace(/,\s*$/,'');
+      for(let i=0;i<opens;i++) jsonStr+=']';
+      for(let i=0;i<brace;i++) jsonStr+='}';
+    }
+    const tags = JSON.parse(jsonStr);
+
+    // Generate a 200px-wide thumbnail to save space in localStorage
+    const thumb = await makeThumbnail(dataUrl, 280);
+
+    // Save to RENDER_TAGS (localStorage) — only metadata + thumbnail
+    const entry = {imgId, projId, projName, dataUrl:thumb, analysedAt:Date.now(), ...tags};
+    // Remove any existing entry for this imgId first
+    const existing = RENDER_TAGS.get().filter(t=>t.imgId!==imgId);
+    existing.unshift(entry);
+    if(existing.length>300) existing.splice(300);
+    RENDER_TAGS.save(existing);
+
+    toast('✦ Render tagged: '+tags.style+' · '+tags.room);
+    updateRendersTabBadge();
+
+    // Auto-refresh library if "My Renders" tab is active
+    if(document.getElementById('lib-renders-grid')?.style.display!=='none'){
+      loadAIRendersLibrary();
+    }
+  } catch(e){
+    console.warn('Render analysis failed:',e.message);
+  }
+}
+
+// Make a small thumbnail from full-size dataUrl to save localStorage space
+function makeThumbnail(dataUrl, maxW){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const ratio=Math.min(1, maxW/img.width);
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*ratio); c.height=Math.round(img.height*ratio);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      res(c.toDataURL('image/jpeg',0.72));
+    };
+    img.onerror=()=>res(dataUrl);
+    img.src=dataUrl;
+  });
+}
+
+// Update "My Renders" tab badge count
+function updateRendersTabBadge(){
+  const count = RENDER_TAGS.get().length;
+  const tab = document.getElementById('lib-tab-renders');
+  if(tab){
+    const badge = tab.querySelector('.renders-badge')||document.createElement('span');
+    badge.className='renders-badge';
+    badge.style.cssText='background:rgba(58,107,138,.12);color:#3A6B8A;border-radius:100px;padding:1px 7px;font-size:.6rem;margin-left:4px';
+    badge.textContent=count>0?count+' tagged':'AI-Tagged';
+    if(!tab.querySelector('.renders-badge')) tab.appendChild(badge);
+  }
+}
+
+// ── FULL IMAGE LIBRARY — "My Renders" tab ──────────────────────────────────────
+async function loadAIRendersLibrary(){
+  const grid = document.getElementById('lib-renders-grid');
+  if(!grid) return;
+
+  // Get all tags
+  const allTags = RENDER_TAGS.get();
+
+  // Apply filters
+  const styleF  = (document.getElementById('renders-filter-style')?.value||'').toLowerCase();
+  const roomF   = (document.getElementById('renders-filter-room')?.value||'').toLowerCase();
+  const moodF   = (document.getElementById('renders-filter-mood')?.value||'').toLowerCase();
+  const textF   = (document.getElementById('renders-filter-text')?.value||'').toLowerCase();
+
+  let filtered = allTags.filter(t=>{
+    if(styleF && !(t.style||'').toLowerCase().includes(styleF)) return false;
+    if(roomF  && !(t.room ||'').toLowerCase().includes(roomF))  return false;
+    if(moodF  && !(t.mood ||'').toLowerCase().includes(moodF))  return false;
+    if(textF){
+      const blob = [t.style,t.room,t.mood,t.projName,...(t.tags||[]),...(t.materials||[])].join(' ').toLowerCase();
+      if(!blob.includes(textF)) return false;
+    }
+    return true;
+  });
+
+  if(!allTags.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--muted)">
+      <div style="font-size:2.5rem;margin-bottom:12px">📸</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300;margin-bottom:6px">No renders analysed yet</div>
+      <div style="font-size:.74rem;line-height:1.7">Go to <strong>Client Renders</strong> → select a project → upload render images<br>Claude will automatically tag each image with style, mood, palette & more</div>
+    </div>`;
+    return;
+  }
+
+  if(!filtered.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">
+      <div style="font-size:1.8rem;margin-bottom:10px">🔍</div>
+      <div style="font-size:.84rem">No renders match these filters</div>
+      <button class="btn-ghost" style="margin-top:12px;font-size:.72rem" onclick="clearRendersFilters()">Clear Filters</button>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(t=>`
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(28,26,23,.06);position:relative">
+      <div style="position:relative">
+        <img src="${t.dataUrl}" style="width:100%;height:160px;object-fit:cover;cursor:pointer;display:block"
+          onclick="openLB('${t.dataUrl}','${(t.projName||'Render').replace(/'/g,"\\'")}  · ${t.style||''}  · ${t.room||''}')" loading="lazy">
+        <button onclick="favAddFromLib('${t.dataUrl}')"
+          style="position:absolute;top:7px;right:7px;background:rgba(247,244,239,.88);border:none;cursor:pointer;font-size:1rem;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .18s"
+          title="Add to favourites">❤️</button>
+      </div>
+      <div style="padding:10px 12px">
+        <div style="font-size:.78rem;font-weight:500;margin-bottom:2px;color:var(--ink)">${t.style||'—'} · ${t.room||'Room'}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:6px">${t.mood||''}${t.projName?' · <em>'+t.projName+'</em>':''}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+          ${(t.palette||[]).map(c=>`<span style="width:13px;height:13px;border-radius:50%;background:${c};border:1px solid var(--border);display:inline-block;flex-shrink:0" title="${c}"></span>`).join('')}
+          ${(t.tags||[]).slice(0,2).map(tag=>`<span style="background:var(--bg2);border-radius:100px;padding:2px 7px;font-size:.58rem;color:var(--muted)">${tag}</span>`).join('')}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function clearRendersFilters(){
+  ['renders-filter-style','renders-filter-room','renders-filter-mood','renders-filter-text'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  loadAIRendersLibrary();
+}
+
+
+
 /* ===================================================================
-   PHASE 6 — PROFILE · PORTFOLIO · FAVOURITES · APPROVAL SYSTEM
-   
+   MOBILE UI HELPERS + DUPLICATE PREVENTION
+=================================================================== */
+
+// ── BOTTOM NAV ────────────────────────────────────────────────────────────────
+function bnSetActive(id){
+  document.querySelectorAll('.bn-item').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById(id); if(el) el.classList.add('active');
+}
+
+// ── DUPLICATE SIGNUP PREVENTION ───────────────────────────────────────────────
+function isAlreadySubmitted(phone){
+  const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  return leads.some(l=>l.phone===phone);
+}
+
+
+/* ===================================================================
    Storage:
    dm_profile:     {name,phone,email,company,companyEmail,position,location,
                     website,insta,exp,avatarDataUrl,password,status,joinedAt}
    dm_portfolio:   {studioName,tagline,about,logoDataUrl,founderName,
                     founderTitle,founderNote,founderPhotoDataUrl,
-                    instaHandle,projects:[{id,name,loc,year,style,type,desc,photos:[dataUrl]}]}
+                    instaHandle,projects:[...]}
    dm_favourites:  [{id,dataUrl,source,addedAt}]
-   dm_render_shared: [{id,dataUrl,tags,addedBy:'developer',analysedAt}]
+   dm_render_shared: [{id,dataUrl,tags,addedBy,analysedAt}]
                      ← Developer uploads go here, visible to ALL users in library
 =================================================================== */
 
@@ -3768,15 +4113,18 @@ const FAVDB = {
 const SHEETS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxuY9ekWhdPg3dje6ucUVJD7hgYB92TGMLFN3Q9O74sDR9CmvXz7d5LulLY00yBRUop/exec'; // ← set after Google Sheets setup
 
 async function sendToSheets(payload){
-  if(SHEETS_WEBHOOK === 'YOUR_APPS_SCRIPT_URL') return; // not set up yet
+  if(SHEETS_WEBHOOK === 'YOUR_APPS_SCRIPT_URL') return;
   try{
-    await fetch(SHEETS_WEBHOOK, {
-      method:'POST',
-      mode:'no-cors', // Google Apps Script requires no-cors
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+    // no-cors mode can't send JSON headers — encode as URL params instead
+    const params = new URLSearchParams({data: JSON.stringify(payload)});
+    await fetch(SHEETS_WEBHOOK + '?' + params.toString(), {
+      method:'GET',
+      mode:'no-cors'
     });
-  } catch(e){ console.warn('Sheets sync failed',e); }
+  } catch(e){
+    console.warn('Sheets sync failed', e);
+    // Silently fail — don't show error toast for background sync
+  }
 }
 
 // ── SIGNUP SUBMIT (new flow — approval required) ──────────────────────────────
@@ -3787,68 +4135,81 @@ async function hpSubmitSignup(){
   const position= document.getElementById('su-position').value;
   const compEmail = document.getElementById('su-company-email').value.trim();
   const insta   = document.getElementById('su-insta').value.trim();
+  const pwd     = document.getElementById('su-pwd')?.value||'';
+  const pwd2    = document.getElementById('su-pwd2')?.value||'';
 
   if(!name){ toast('Please enter your full name'); return; }
   if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number'); return; }
   if(!company){ toast('Please enter your company / studio name'); return; }
   if(!position){ toast('Please select your position'); return; }
-  if(!compEmail && !insta){ toast('Please provide either a company email or Instagram handle'); return; }
+  if(!compEmail && !insta){ toast('Please provide company email or Instagram handle'); return; }
+  if(!pwd || pwd.length<8){ toast('Password must be at least 8 characters'); return; }
+  if(pwd !== pwd2){ toast('Passwords do not match'); return; }
 
-  const signupData = {
-    name, phone, company, position,
-    companyEmail: compEmail,
-    instagram: insta ? 'instagram.com/'+insta : '',
-    status: 'pending',
-    submittedAt: new Date().toLocaleString('en-IN'),
-    timestamp: Date.now()
-  };
+  // Duplicate check
+  if(isAlreadySubmitted(phone)){
+    document.getElementById('s-home').querySelector('.hp-card').innerHTML=`
+      <div class="hp-brand" style="background:linear-gradient(135deg,#2A1F3D,#3D2B1F)">
+        <div class="hp-brand-dot"></div><div class="hp-brand-name">DesignMind</div>
+      </div>
+      <div class="hp-body" style="text-align:center;padding:36px 28px">
+        <div style="font-size:3rem;margin-bottom:16px">✅</div>
+        <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:8px">Already Submitted!</div>
+        <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:20px">We already have your signup. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours to verify and approve.</div>
+        <button class="btn-ghost" style="width:100%" onclick="hpSkip()">Continue as Demo →</button>
+      </div>`; return;
+  }
 
-  // Save locally as pending
+  // Save password + profile locally as pending
   const prof = PROFDB.get();
-  Object.assign(prof, {name,phone,company,position,companyEmail:compEmail,insta,status:'pending',joinedAt:Date.now()});
+  Object.assign(prof, {name,phone,company,position,companyEmail:compEmail,insta,status:'pending',joinedAt:Date.now(),password:btoa(pwd)});
   PROFDB.save(prof);
-  localStorage.setItem('dm_user', JSON.stringify({name,phone,status:'pending'}));
+  localStorage.setItem('dm_user', JSON.stringify({name,phone,status:'pending',mode:'pending'}));
 
-  // Send to Google Sheets for approval
-  await sendToSheets({action:'signup_request', ...signupData});
+  // Save to leads to prevent duplicate
+  const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  leads.push({phone,name,company,ts:Date.now()});
+  localStorage.setItem('dm_leads',JSON.stringify(leads));
 
-  // Email to developer (mailto fallback)
-  const subject = encodeURIComponent('DesignMind Signup Request — '+name+' ('+company+')');
-  const body = encodeURIComponent(
-    'New signup request — awaiting your approval:\n\n' +
-    'Name: ' + name + '\nMobile: +91 ' + phone +
-    '\nCompany: ' + company + '\nPosition: ' + position +
-    '\nCompany Email: ' + (compEmail||'—') +
-    '\nInstagram: ' + (insta?'instagram.com/'+insta:'—') +
-    '\nSubmitted: ' + new Date().toLocaleString('en-IN') +
-    '\n\n→ Open your Google Sheet to Approve or Deny this request.'
-  );
+  // Send to Google Sheets
+  await sendToSheets({action:'signup_request',name,phone,company,position,
+    companyEmail:compEmail,instagram:insta?'instagram.com/'+insta:'',
+    status:'pending',submittedAt:new Date().toLocaleString('en-IN')});
+
+  // Email notification to developer
+  const subject=encodeURIComponent('DesignMind Signup — '+name+' ('+company+')');
+  const body=encodeURIComponent('New signup:\n\nName: '+name+'\nMobile: +91 '+phone+'\nCompany: '+company+'\nPosition: '+position+'\nEmail: '+(compEmail||'—')+'\nInstagram: '+(insta?'instagram.com/'+insta:'—')+'\n\nOpen Google Sheet to Approve or Deny.');
   try{ window.open('mailto:umangsingal1@gmail.com?subject='+subject+'&body='+body,'_blank'); }catch(e){}
 
-  // Show pending screen
-  showPendingScreen(name);
+  showPendingScreen(name, phone);
 }
 
-function showPendingScreen(name){
+function showPendingScreen(name, phone){
+  const displayPhone = phone || document.getElementById('su-phone')?.value||'';
   document.getElementById('s-home').querySelector('.hp-card').innerHTML = `
     <div class="hp-brand" style="background:linear-gradient(135deg,#2A1F3D,#3D2B1F)">
       <div class="hp-brand-dot"></div>
       <div class="hp-brand-name">DesignMind</div>
     </div>
     <div class="hp-body" style="text-align:center;padding:36px 28px">
-      <div style="font-size:3rem;margin-bottom:16px">⏳</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:8px">Request Submitted, ${name.split(' ')[0]}!</div>
-      <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:20px">Your details have been sent to Umang for review. You'll receive confirmation on <strong>+91 ${document.getElementById('su-phone')?.value||''}</strong> within 24 hours once approved.</div>
-      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.15);border-radius:9px;padding:12px 14px;font-size:.72rem;text-align:left;line-height:1.7">
-        While you wait, you can:<br>
-        👉 <strong onclick="hpSkip()" style="cursor:pointer;color:var(--gold)">Continue as Demo User →</strong><br>
-        to explore all features of DesignMind before access is granted.
+      <div style="font-size:3rem;margin-bottom:16px">📞</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:8px">You're on the list, ${name.split(' ')[0]}!</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px">
+        Our team will call you on<br>
+        <strong style="font-size:1rem;color:var(--ink)">+91 ${displayPhone}</strong><br>
+        within the next <strong>24 hours</strong> to verify and activate your account.
       </div>
+      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.15);border-radius:9px;padding:13px 15px;font-size:.72rem;text-align:left;line-height:1.8;margin-bottom:16px">
+        📌 Make sure your phone is reachable on <strong>+91 ${displayPhone}</strong><br>
+        🔐 You've set your password — use it to sign in once approved.
+      </div>
+      <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="hpSkip()">Continue as Demo User →</button>
     </div>`;
 }
 
 // ── PROFILE OPEN / SAVE ───────────────────────────────────────────────────────
 function openProfile(){
+  if(_demoCheck('Profile')) return;
   showScr('s-profile');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   const prof = PROFDB.get();
@@ -3920,9 +4281,16 @@ async function saveProfile(){
 let _ppEditId = null;
 let _ppPhotos = [];
 
+function openPlugins(){
+  showScr('s-plugins');
+  document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nlink')[6]?.classList.add('active');
+}
+
+
 function openPortfolio(){
+  if(_demoCheck('Portfolio')) return;
   const prof = PROFDB.get();
-  // Check profile is complete enough
   if(!prof.name && !prof.company){ toast('Complete your profile first to set up your portfolio'); openProfile(); return; }
   showScr('s-portfolio');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
@@ -4077,6 +4445,7 @@ function portShareWhatsApp(){ const url=encodeURIComponent(document.getElementBy
 
 // ── FAVOURITES ────────────────────────────────────────────────────────────────
 function openFavourites(){
+  if(_demoCheck('Favourites')) return;
   showScr('s-favourites');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   favRender();
@@ -4113,43 +4482,6 @@ function favAddFromLib(dataUrl){
 }
 
 // ── SHARED DEVELOPER RENDER LIBRARY (shown to all users, min 35% match) ─────
-function getSharedLibImages(briefTags){
-  // briefTags = {style, room, mood} from current project brief
-  const shared = JSON.parse(localStorage.getItem('dm_render_tags')||'[]');
-  if(!briefTags) return shared;
-  return shared.filter(img=>{
-    let score=0, checks=0;
-    if(briefTags.style && img.style){ checks++; if(img.style.toLowerCase().includes(briefTags.style.toLowerCase())) score++; }
-    if(briefTags.room && img.room){ checks++; if(img.room.toLowerCase().includes(briefTags.room.toLowerCase())) score++; }
-    if(briefTags.mood && img.mood){ checks++; if(img.mood.toLowerCase().includes(briefTags.mood.toLowerCase())) score++; }
-    return checks===0 || (score/checks)>=0.35;
-  });
-}
-
-// Patch lib renders tab to also show shared developer images
-const _origLoadAIRenders = window.loadAIRendersLibrary;
-window.loadAIRendersLibrary = async function(){
-  const grid = document.getElementById('lib-renders-grid');
-  const myTags = RENDER_TAGS.get();
-  const sharedTags = JSON.parse(localStorage.getItem('dm_render_tags')||'[]');
-  const all = [...myTags, ...sharedTags.filter(s=>s.addedBy==='developer'||s.projId==='portfolio')];
-  if(!all.length){ grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)"><div style="font-size:2rem;margin-bottom:10px">📸</div><div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300">No analysed renders yet</div><div style="font-size:.76rem;margin-top:5px">Upload renders or portfolio photos → Claude tags them automatically</div></div>`; return; }
-  grid.innerHTML = all.map(t=>`
-    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 2px 12px rgba(28,26,23,.06);position:relative">
-      <img src="${t.dataUrl}" style="width:100%;height:160px;object-fit:cover;cursor:pointer" onclick="openLB('${t.dataUrl}','${t.projName||'Render'}')" loading="lazy">
-      ${t.addedBy==='developer'||t.projId==='portfolio'?`<div class="shared-lib-badge">✦ Library</div>`:''}
-      <div style="padding:10px 12px">
-        <div style="font-size:.75rem;font-weight:500;margin-bottom:3px">${t.style||'—'} · ${t.room||'Room'}</div>
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:5px">${t.mood||''}${t.projName?' · '+t.projName:''}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
-          ${(t.palette||[]).map(c=>`<span style="width:14px;height:14px;border-radius:50%;background:${c};border:1px solid var(--border);display:inline-block;flex-shrink:0" title="${c}"></span>`).join('')}
-          ${(t.tags||[]).slice(0,3).map(tag=>`<span style="background:var(--bg2);border-radius:100px;padding:2px 7px;font-size:.58rem;color:var(--muted)">${tag}</span>`).join('')}
-          <button onclick="favAddFromLib('${t.dataUrl}')" style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:.9rem;color:#A84D3A" title="Add to favourites">❤️</button>
-        </div>
-      </div>
-    </div>`).join('');
-};
-
 // ── CLIENT PORTFOLIO VIEW (via #portfolio/token) ──────────────────────────────
 function loadPortfolioPortal(token){
   const prof = PROFDB.get();
@@ -4692,6 +5024,7 @@ const PIE_COLS = ['#B8884A','#5E7260','#3A6B8A','#A84D3A','#7059A0','#4A7A6A','#
 
 // ── Open BOQ screen ───────────────────────────────────────────────────────────
 function openBOQ(){
+  if(_demoCheck('BOQ & Costs')) return;
   showScr('s-boq');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.nlink')[3]?.classList.add('active');
@@ -5829,6 +6162,7 @@ let _newSnagPhotos = [];       // staging for new snag
 
 // ── Open snag list screen ─────────────────────────────────────────────────────
 function openSnagList(projId){
+  if(_demoCheck('Snag List')) return;
   showScr('s-snag');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.nlink')[4]?.classList.add('active');
