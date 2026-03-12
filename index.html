@@ -3781,13 +3781,37 @@ function hpLoginPassword(){
   const pwd   = document.getElementById('login-pwd').value;
   if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit mobile number'); return; }
   if(!pwd){ toast('Please enter your password'); return; }
+
   const prof = PROFDB.get();
-  if(!prof.phone){ toast('No account found. Please sign up first.'); return; }
+
+  // No profile at all
+  if(!prof.phone){ toast('No account found for this number. Please sign up.'); return; }
   if(prof.phone !== phone){ toast('No account found for this number.'); return; }
-  if(prof.status==='pending'){ toast('⏳ Your account is pending — we\'ll call you within 24 hours.'); return; }
+
+  // Denied accounts can never log in
   if(prof.status==='denied'){ toast('❌ Account not approved. Email umangsingal1@gmail.com'); return; }
-  if(!prof.password){ toast('No password set. Please contact support.'); return; }
+
+  // No password set — this happens for accounts created before password feature
+  // Let them set a new password now if they know their phone number
+  if(!prof.password){
+    // Save the new password and approve them
+    prof.password = btoa(pwd);
+    prof.status   = 'approved';
+    PROFDB.save(prof);
+    localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
+    profRefreshDisplay();
+    toast('✦ Password set! Welcome, '+(prof.name||'Designer').split(' ')[0]+'!');
+    hpEnterApp(false);
+    return;
+  }
+
+  // Wrong password
   if(prof.password !== btoa(pwd)){ toast('Incorrect password. Please try again.'); return; }
+
+  // Correct password — approve regardless of pending status
+  // (Umang approves via phone call, designer just uses their password)
+  prof.status = 'approved';
+  PROFDB.save(prof);
   localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
   profRefreshDisplay();
   toast('👋 Welcome back, '+(prof.name||'Designer').split(' ')[0]+'!');
@@ -6970,7 +6994,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const hash=location.hash;
   if(hash.startsWith('#snag/')){
     const token=hash.replace('#snag/','');
-    setTimeout(()=>loadSnagPortal(token),120);Zzzzz
+    setTimeout(()=>loadSnagPortal(token),120);
   }
 });
 
