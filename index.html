@@ -1019,6 +1019,16 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
   </div>
 </nav>
 
+<!-- API Key Banner — shown when key not set -->
+<div id="api-key-banner" style="display:none;background:linear-gradient(135deg,#2E2B26,#3D2B1F);color:#F7F4EF;padding:9px 20px;font-size:.74rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:58px;z-index:98;">
+  <span>🔑 <strong>Claude API key needed</strong> for AI features (BOQ generation, render analysis)</span>
+  <div style="display:flex;gap:8px;align-items:center;margin-left:auto">
+    <input id="api-key-inp" type="password" placeholder="sk-ant-api03-…" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;padding:5px 10px;color:white;font-size:.72rem;width:240px;font-family:'Outfit',sans-serif;" onkeydown="if(event.key==='Enter')saveApiKey()">
+    <button onclick="saveApiKey()" style="background:#B8884A;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:.72rem;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:500">Save</button>
+    <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:rgba(255,255,255,.6);font-size:.68rem;text-decoration:underline">Get key →</a>
+  </div>
+</div>
+
 <!-- CLIENT MODE BANNER -->
 <div style="display:none;background:linear-gradient(135deg,#2E2B26,#3D2B1F);color:#F7F4EF;padding:11px 48px;align-items:center;gap:14px;font-size:.79rem;" id="clientBanner">
   <div style="width:8px;height:8px;border-radius:50%;background:#B8884A;animation:blink 2s ease-in-out infinite;flex-shrink:0"></div>
@@ -2155,7 +2165,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     <div><h1 class="s-title">BOQ & <em>Cost Sheet</em></h1><p class="s-sub" id="boq-sub">Bill of Quantities · Procurement · Cost Analysis</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select class="bfs" id="boq-proj-sel" onchange="boqLoadProject(this.value)" style="background:#FDFCFA;border:1px solid var(--border);border-radius:100px;padding:8px 24px 8px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;outline:none;cursor:pointer;min-width:180px"></select>
-      <button class="boq-ai-btn" id="boq-ai-btn" onclick="boqAutoGenerate()">✦ AI Generate BOQ</button>
+      <button class="boq-ai-btn" id="boq-ai-btn" onclick="boqAutoGenerate()">✦ Generate BOQ Template</button>
       <button class="btn-ghost btn-sm" onclick="boqExportCSV()">📥 Export CSV</button>
       <button class="btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
     </div>
@@ -2762,9 +2772,7 @@ function skipBP(){setStep(2);loadDefaults();}
 async function proceedBP(){
   setStep(2);document.getElementById('analysisSpin').style.display='block';document.getElementById('roomsArea').style.display='none';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:'Analyse the floor plan. Return ONLY JSON: {"rooms":[{"name":"Living Room","w":"14","l":"18","unit":"ft"}]}. No markdown.',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:bpB64}},{type:'text',text:'Extract rooms as JSON.'}]}]})});
-    if(!res.ok) throw new Error('API '+res.status);
-    const d=await res.json();
+    const d=await claudeFetch({model:'claude-sonnet-4-20250514',max_tokens:600,system:'Analyse the floor plan. Return ONLY JSON: {"rooms":[{"name":"Living Room","w":"14","l":"18","unit":"ft"}]}. No markdown.',messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:bpB64}},{type:'text',text:'Extract rooms as JSON.'}]}]});
     if(d.error) throw new Error(d.error.message);
     let rawText=(d.content||[]).map(b=>b.text||'').join('').trim();
     rawText=rawText.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
@@ -3613,6 +3621,48 @@ async function cpSubmitReview(){
 
 // ── Pexels API Key — designer must add their own free key from pexels.com/api ──
 // Get free key at: https://www.pexels.com/api/  (free, no credit card needed)
+// ── CLAUDE API KEY MANAGEMENT ─────────────────────────────────────────────────
+function getApiKey(){ return localStorage.getItem('dm_claude_key')||''; }
+
+function saveApiKey(){
+  const val = document.getElementById('api-key-inp').value.trim();
+  if(!val.startsWith('sk-ant-')){ toast('⚠️ Key should start with sk-ant-…'); return; }
+  localStorage.setItem('dm_claude_key', val);
+  document.getElementById('api-key-banner').style.display='none';
+  toast('✦ API key saved — AI features enabled!');
+}
+
+function checkApiKeyBanner(){
+  const banner = document.getElementById('api-key-banner');
+  if(!banner) return;
+  banner.style.display = getApiKey() ? 'none' : 'flex';
+}
+
+// Central fetch — injects required auth headers for ALL Claude API calls
+async function claudeFetch(body){
+  const key = getApiKey();
+  if(!key){
+    checkApiKeyBanner();
+    throw new Error('No API key. Enter your Claude API key in the banner above.');
+  }
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res.ok){
+    const t = await res.text();
+    if(res.status===401){ localStorage.removeItem('dm_claude_key'); checkApiKeyBanner(); }
+    throw new Error('API '+res.status+': '+t.slice(0,120));
+  }
+  return res.json();
+}
+
 const PEXELS_API_KEY = '9VCo69ZvtMy4ySbhf87YYGRv6bCEvWG6fl4i8v0g5etPSvULgGR3iurU'; // ← Replace with real key
 let pexelsPage = 1;
 let pexelsLastQuery = '';
@@ -3850,6 +3900,7 @@ addEventListener('DOMContentLoaded',()=>{
       },300);
     }
     updateProjStats();
+    checkApiKeyBanner();
   }
 
   // Patch rhuConfirm to auto-trigger AI analysis after upload
@@ -3905,10 +3956,7 @@ async function analyseAndStoreRender(imgId, projId, projName, dataUrl){
     const b64 = dataUrl.split(',')[1];
     if(!b64) return;
 
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
+    const apiData = await claudeFetch({
         model:'claude-sonnet-4-20250514',
         max_tokens:500,
         system:'You are an interior design expert. Analyse the render and return ONLY valid JSON, no markdown, no explanation. Shape: {"style":"Contemporary","palette":["#B5A48A","#F2EDE4","#3D2B1F"],"mood":"Warm & Cozy","materials":["marble","wood"],"room":"Living Room","tags":["open plan","neutral tones"]}',
@@ -3916,11 +3964,8 @@ async function analyseAndStoreRender(imgId, projId, projName, dataUrl){
           {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
           {type:'text',text:'Analyse this interior design render. Return ONLY the JSON — max 2-3 words per value, max 3 items per array.'}
         ]}]
-      })
     });
 
-    if(!res.ok) return;
-    const apiData = await res.json();
     if(apiData.error || !apiData.content?.length) return;
 
     let text = apiData.content.map(b=>b.text||'').join('').trim()
@@ -5450,72 +5495,424 @@ function acSearch(inputId, libKey){
 function acPick(inputId,val,dropId){ document.getElementById(inputId).value=val; document.getElementById(dropId).classList.remove('open'); if(inputId==='brow-qty'||inputId==='brow-rate')boqRowCalc(); }
 document.addEventListener('click',e=>{ document.querySelectorAll('.ac-drop').forEach(d=>{ if(!d.parentElement.contains(e.target)) d.classList.remove('open'); }); });
 
-// ── AI Generate BOQ ───────────────────────────────────────────────────────────
-async function boqAutoGenerate(){
-  if(!boqProjId){toast('Select a project first');return;}
-  const btn=document.getElementById('boq-ai-btn');
-  btn.disabled=true; btn.textContent='✦ Generating…';
+// ══════════════════════════════════════════════════════════════════
+//  SMART BOQ TEMPLATES — No AI needed, instant generation
+//  Templates based on Indian market rates, per project type
+//  Each room has realistic items, quantities, rates, vendors
+// ══════════════════════════════════════════════════════════════════
 
-  const data=BOQDB.getData(boqProjId);
-  const proj=getAllBOQProjs().find(p=>p.id===boqProjId);
+const BOQ_TEMPLATES = {
 
-  // Build context from Phase 1 wizard data (rooms array) and Phase 2 approved renders
-  const rhProj=getAllRHProjs().find(p=>p.id===boqProjId);
-  const sections=rhProj?.sections||data.rooms.filter(r=>r!=='Miscellaneous');
-  const approvedCount=rhProj?((await RH.getProjImgs(boqProjId)).filter(i=>i.status==='approved').length):0;
+  // ── RESIDENTIAL (Flat / Apartment) ──────────────────────────────
+  flat: {
+    'Living Room': [
+      {item:'Vitrified Tile Flooring',desc:'800x800mm, double charge, anti-skid finish',qty:400,size:'sqft',rate:85,vendor:'Kajaria Ceramics'},
+      {item:'False Ceiling — POP',desc:'2-layer gypsum false ceiling with cove lighting provision',qty:400,size:'sqft',rate:110,vendor:'Saint Gobain'},
+      {item:'Feature Wall — Textured Paint',desc:'Asian Paints Royale texture, one accent wall',qty:120,size:'sqft',rate:45,vendor:'Asian Paints'},
+      {item:'Sofa Set',desc:'6-seater L-shaped sectional, premium fabric, solid teak frame',qty:1,size:'nos',rate:75000,vendor:'Urban Ladder'},
+      {item:'TV Unit — Custom Laminate',desc:'Floor-to-ceiling TV panel with storage, high gloss laminate',qty:1,size:'nos',rate:35000,vendor:'Local Carpenter'},
+      {item:'Coffee Table',desc:'Tempered glass top, powder-coated steel frame',qty:1,size:'nos',rate:12000,vendor:'Pepperfry'},
+      {item:'Curtains & Hardware',desc:'Blackout curtains, S-fold, motorised track provision',qty:3,size:'nos',rate:8000,vendor:'D\'Decor'},
+      {item:'Recessed Downlights',desc:'15W LED warm white, flush mount',qty:12,size:'nos',rate:1200,vendor:'Philips'},
+    ],
+    'Master Bedroom': [
+      {item:'Laminate Wood Flooring',desc:'12mm AC4 grade laminate, with underlay',qty:180,size:'sqft',rate:95,vendor:'Pergo'},
+      {item:'False Ceiling — Gypsum',desc:'Single layer with perimeter cove, spot provision',qty:180,size:'sqft',rate:90,vendor:'Saint Gobain'},
+      {item:'Wardrobe — Modular',desc:'Floor-to-ceiling, 8ft x 8ft, sliding shutters, laminates',qty:1,size:'nos',rate:65000,vendor:'Godrej Interio'},
+      {item:'King Bed with Storage',desc:'Hydraulic storage bed, upholstered headboard',qty:1,size:'nos',rate:45000,vendor:'Durian'},
+      {item:'Side Tables',desc:'Pair, powder-coated steel, tempered glass shelf',qty:2,size:'nos',rate:6000,vendor:'Pepperfry'},
+      {item:'Dressing Unit with Mirror',desc:'Vanity with LED mirror, soft-close drawers',qty:1,size:'nos',rate:22000,vendor:'Local Carpenter'},
+      {item:'Curtains',desc:'Blackout, eyelet, floor to ceiling',qty:2,size:'nos',rate:6500,vendor:'D\'Decor'},
+      {item:'AC Provision — False Ceiling Cut',desc:'AC slot, diffuser grille, insulated duct',qty:1,size:'nos',rate:8500,vendor:'AC Contractor'},
+    ],
+    'Kitchen': [
+      {item:'Modular Kitchen — Lower Units',desc:'18mm marine ply carcass, acrylic shutter, SS hinges',qty:20,size:'rft',rate:3200,vendor:'Sleek Kitchen'},
+      {item:'Modular Kitchen — Upper Units',desc:'Same finish, aluminium profile handle',qty:14,size:'rft',rate:2800,vendor:'Sleek Kitchen'},
+      {item:'Granite Counter Top',desc:'Black Galaxy granite, 20mm polished, 18" deep',qty:22,size:'rft',rate:850,vendor:'Local Stone Merchant'},
+      {item:'Kitchen Sink — SS',desc:'Double bowl, 304 grade SS, with drain set',qty:1,size:'nos',rate:8500,vendor:'Franke'},
+      {item:'Kitchen Tiles — Wall',desc:'300x600mm ceramic, subway pattern',qty:120,size:'sqft',rate:65,vendor:'Somany'},
+      {item:'Kitchen Tiles — Floor',desc:'Anti-skid vitrified 400x400mm',qty:100,size:'sqft',rate:75,vendor:'Kajaria Ceramics'},
+      {item:'Hood & Chimney Provision',desc:'Wiring, gas line, exhaust duct for chimney',qty:1,size:'nos',rate:4500,vendor:''},
+    ],
+    'Master Bathroom': [
+      {item:'Bathroom Tiles — Floor',desc:'Anti-skid vitrified 300x300mm',qty:60,size:'sqft',rate:90,vendor:'Somany'},
+      {item:'Bathroom Tiles — Wall',desc:'Full height 300x600mm ceramic',qty:180,size:'sqft',rate:80,vendor:'Kajaria Ceramics'},
+      {item:'Sanitary Ware Set',desc:'EWC, wash basin, cistern — wall-hung',qty:1,size:'nos',rate:32000,vendor:'Kohler'},
+      {item:'Shower Enclosure',desc:'8mm toughened glass, SS frame, overhead shower',qty:1,size:'nos',rate:28000,vendor:'Jaquar'},
+      {item:'CP Fittings Set',desc:'Basin mixer, shower mixer, towel rail, hooks',qty:1,size:'nos',rate:18000,vendor:'Jaquar'},
+      {item:'Exhaust Fan',desc:'150mm diameter, 5-star rated',qty:1,size:'nos',rate:2800,vendor:'Havells'},
+      {item:'Mirror with LED Frame',desc:'24"x36" backlit mirror, IP44 rated',qty:1,size:'nos',rate:7500,vendor:'Local Vendor'},
+    ],
+    'Dining Room': [
+      {item:'Dining Table',desc:'6-seater, marble top, powder-coated legs',qty:1,size:'nos',rate:45000,vendor:'Urban Ladder'},
+      {item:'Dining Chairs',desc:'Set of 6, upholstered seat, metal frame',qty:6,size:'nos',rate:5500,vendor:'Pepperfry'},
+      {item:'Crockery Unit',desc:'Display unit with glass shutters, LED strip inside',qty:1,size:'nos',rate:28000,vendor:'Local Carpenter'},
+      {item:'Pendant Light',desc:'3-light cluster pendant, brushed brass finish',qty:1,size:'nos',rate:9500,vendor:'Philips'},
+    ],
+    'Kids Bedroom': [
+      {item:'Study Table & Chair',desc:'Height-adjustable table, ergonomic chair',qty:1,size:'nos',rate:18000,vendor:'Durian'},
+      {item:'Single Bed with Storage',desc:'Box storage, safety rails if needed',qty:1,size:'nos',rate:22000,vendor:'Godrej Interio'},
+      {item:'Wardrobe — Compact',desc:'4ft x 8ft, 2 sliding shutters, fun laminate',qty:1,size:'nos',rate:32000,vendor:'Local Carpenter'},
+      {item:'Bookshelf — Wall Mounted',desc:'5-tier open shelving, painted MDF',qty:1,size:'nos',rate:12000,vendor:'Local Carpenter'},
+    ],
+    'Balcony': [
+      {item:'Anti-Skid Outdoor Tiles',desc:'300x300mm heavy duty outdoor vitrified',qty:80,size:'sqft',rate:75,vendor:'Somany'},
+      {item:'Planter Boxes',desc:'FRP planters, large, weather resistant',qty:4,size:'nos',rate:3500,vendor:'Nursery Vendor'},
+      {item:'Outdoor Furniture Set',desc:'2 chairs + side table, powder coated steel',qty:1,size:'nos',rate:18000,vendor:'Pepperfry'},
+      {item:'Railing — Glass Panel',desc:'12mm toughened glass, SS top rail',qty:15,size:'rft',rate:2200,vendor:'Glass Contractor'},
+    ],
+    'Electrical': [
+      {item:'Electrical Rewiring — Complete',desc:'ISI marked wires, MCB board, earthing',qty:1,size:'lumpsum',rate:85000,vendor:'Licensed Electrician'},
+      {item:'Modular Switches & Sockets',desc:'Legrand/Anchor, complete set per room',qty:1,size:'lumpsum',rate:35000,vendor:'Legrand'},
+      {item:'Home Automation — Basic',desc:'Smart switches for living + master bed',qty:1,size:'nos',rate:45000,vendor:'Legrand'},
+    ],
+    'Civil Work': [
+      {item:'Demolition & Debris Removal',desc:'Partial demolition, debris hauling',qty:1,size:'lumpsum',rate:35000,vendor:'Civil Contractor'},
+      {item:'Waterproofing — Bathrooms',desc:'Dr. Fixit chemical waterproofing, 2 coats',qty:180,size:'sqft',rate:55,vendor:'Dr. Fixit Contractor'},
+      {item:'Wall Putty & Primer',desc:'JK Putty, 2 coats, all rooms',qty:1800,size:'sqft',rate:22,vendor:'Asian Paints'},
+      {item:'Interior Paint — All Rooms',desc:'Asian Paints Royale Matt, 2 coats',qty:1800,size:'sqft',rate:28,vendor:'Asian Paints'},
+    ],
+    'Miscellaneous': [
+      {item:'Site Supervision & Labour',desc:'Skilled labour, tools, safety equipment',qty:1,size:'lumpsum',rate:60000,vendor:'Project Contractor'},
+      {item:'Transportation & Logistics',desc:'Delivery of all materials to site',qty:1,size:'lumpsum',rate:18000,vendor:'Logistics'},
+      {item:'Contingency & Snags',desc:'10% buffer for unforeseen costs',qty:1,size:'lumpsum',rate:50000,vendor:''},
+    ],
+  },
 
-  const prompt=`You are an experienced interior design BOQ (Bill of Quantities) specialist in India.
-Generate a realistic, detailed BOQ for a ${proj?.type||'residential'} interior project.
-Project: ${proj?.name||'Interior Project'}
-Sections/Rooms: ${sections.join(', ')}
-${approvedCount>0?`Client has approved ${approvedCount} render images and the project is ready for procurement.`:''}
+  // ── VILLA ────────────────────────────────────────────────────────
+  villa: {
+    'Living Room': [
+      {item:'Italian Marble Flooring',desc:'24x24 Statuario marble, 18mm, polished',qty:800,size:'sqft',rate:220,vendor:'Stone Merchant'},
+      {item:'Coffered Ceiling — Wood',desc:'Teak wood coffered ceiling with concealed lighting',qty:800,size:'sqft',rate:280,vendor:'Carpenter'},
+      {item:'Sofa Set — Premium',desc:'10-seater, Italian leather, solid teak',qty:1,size:'nos',rate:180000,vendor:'The Furniture Republic'},
+      {item:'TV Wall — Full Panel',desc:'Floor-to-ceiling feature wall, veneer + stone',qty:1,size:'nos',rate:95000,vendor:'Local Carpenter'},
+      {item:'Chandelier — Statement',desc:'Crystal chandelier, 48" diameter',qty:1,size:'nos',rate:85000,vendor:'Fos Lighting'},
+      {item:'Curtains — Motorised',desc:'Floor-to-ceiling, motorised S-fold, blackout',qty:6,size:'nos',rate:22000,vendor:'D\'Decor'},
+    ],
+    'Master Bedroom': [
+      {item:'Engineered Wood Flooring',desc:'Oak, 12mm, hand-scraped finish',qty:350,size:'sqft',rate:185,vendor:'Pergo'},
+      {item:'King Bed — Custom',desc:'King size, upholstered headboard to ceiling, hydraulic',qty:1,size:'nos',rate:120000,vendor:'Custom Carpenter'},
+      {item:'Walk-in Wardrobe',desc:'Full room wardrobe, velvet interior, push-to-open',qty:1,size:'nos',rate:195000,vendor:'Hafele'},
+      {item:'Master Bath En-suite',desc:'Marble flooring, Kohler suite, rain shower',qty:1,size:'lumpsum',rate:185000,vendor:'Kohler / Contractor'},
+    ],
+    'Kitchen': [
+      {item:'Italian Modular Kitchen',desc:'HDF carcass, lacquer finish shutters, Hettich hardware',qty:35,size:'rft',rate:6500,vendor:'Häfele'},
+      {item:'Quartz Counter Top',desc:'Calacatta quartz, 20mm polished',qty:40,size:'rft',rate:1800,vendor:'Caesarstone'},
+      {item:'Kitchen Island',desc:'Marble top island with seating, custom fabrication',qty:1,size:'nos',rate:85000,vendor:'Carpenter'},
+      {item:'Appliances Provision',desc:'Chimney, hob, oven, dishwasher built-in provision',qty:1,size:'lumpsum',rate:120000,vendor:'Miele / Bosch'},
+    ],
+    'Miscellaneous': [
+      {item:'HVAC — Central AC',desc:'Ducted AC, all rooms, 5-ton capacity',qty:1,size:'lumpsum',rate:350000,vendor:'Blue Star'},
+      {item:'Home Automation — Full',desc:'Lutron smart home, all rooms + security',qty:1,size:'lumpsum',rate:450000,vendor:'Lutron'},
+      {item:'Landscaping — Garden',desc:'Outdoor planting, pathway, water feature',qty:1,size:'lumpsum',rate:280000,vendor:'Landscape Contractor'},
+      {item:'Contingency',desc:'10% buffer',qty:1,size:'lumpsum',rate:150000,vendor:''},
+    ],
+  },
 
-Generate 4-6 realistic BOQ line items per room. Include materials, furniture, and fittings.
-Use realistic Indian market rates (₹).
+  // ── OFFICE (Commercial) ──────────────────────────────────────────
+  office: {
+    'Reception': [
+      {item:'Reception Counter — Custom',desc:'Solid surface top, backlit logo panel, LED strip',qty:1,size:'nos',rate:95000,vendor:'Local Fabricator'},
+      {item:'Lobby Flooring — Polished Concrete',desc:'Microcement finish, 3-coat system',qty:600,size:'sqft',rate:120,vendor:'Microcement Vendor'},
+      {item:'Feature Wall — Brand Wall',desc:'Backlit company name, wooden slat panel',qty:1,size:'nos',rate:55000,vendor:'Signage + Carpenter'},
+      {item:'Seating — Waiting Area',desc:'Modular lounge seating, 8 seats, fabric',qty:1,size:'nos',rate:65000,vendor:'Featherlite'},
+      {item:'Pendant Lighting — Feature',desc:'Cluster pendant, 6 lights',qty:1,size:'nos',rate:22000,vendor:'Philips'},
+    ],
+    'Open Office': [
+      {item:'Raised Access Flooring',desc:'600x600mm tiles, 150mm raised, for cable management',qty:2000,size:'sqft',rate:220,vendor:'Tate Access Floors'},
+      {item:'Workstation Cluster — 4-Seater',desc:'L-shaped workstations, modesty panel, cable tray',qty:10,size:'nos',rate:28000,vendor:'Godrej Interio'},
+      {item:'Task Chair — Ergonomic',desc:'Mesh back, adjustable lumbar, armrests',qty:40,size:'nos',rate:12000,vendor:'Herman Miller / Featherlite'},
+      {item:'False Ceiling — Grid',desc:'Armstrong mineral fibre tiles 600x600, grid system',qty:2000,size:'sqft',rate:95,vendor:'Armstrong'},
+      {item:'LED Panel Lights',desc:'600x600mm 40W LED panel, uniform illumination',qty:40,size:'nos',rate:2800,vendor:'Philips'},
+      {item:'Partition — Glass',desc:'10mm toughened glass, aluminium frame, full height',qty:80,size:'rft',rate:2200,vendor:'Glass Contractor'},
+    ],
+    'Meeting Room': [
+      {item:'Conference Table',desc:'12-seater, veneer top, cable management box',qty:1,size:'nos',rate:85000,vendor:'Godrej Interio'},
+      {item:'Conference Chairs',desc:'High-back, mesh, set of 12',qty:12,size:'nos',rate:9500,vendor:'Featherlite'},
+      {item:'AV System Provision',desc:'Projector/TV mount, HDMI routing, screen',qty:1,size:'nos',rate:45000,vendor:'AV Vendor'},
+      {item:'Acoustic Panels',desc:'Fabric-wrapped, wall-mounted, NRC 0.85',qty:8,size:'nos',rate:8500,vendor:'Sontext'},
+      {item:'Whiteboard Wall',desc:'Magnetic whiteboard paint + dry erase surface',qty:80,size:'sqft',rate:180,vendor:''},
+    ],
+    'Cabins': [
+      {item:'Executive Desk',desc:'L-shaped, veneer, 8ft x 5ft',qty:1,size:'nos',rate:65000,vendor:'Godrej Interio'},
+      {item:'Executive Chair',desc:'Premium leather, high-back',qty:1,size:'nos',rate:35000,vendor:'Durian'},
+      {item:'Visitor Chairs',desc:'Fabric, metal frame, set of 2',qty:2,size:'nos',rate:8500,vendor:'Featherlite'},
+      {item:'Cabin Partition — Glass',desc:'Frameless glass, 10mm, full height',qty:30,size:'rft',rate:2800,vendor:'Glass Contractor'},
+    ],
+    'Pantry': [
+      {item:'Modular Pantry — Cabinets',desc:'Laminate finish, SS hardware, 10 linear feet',qty:10,size:'rft',rate:3500,vendor:'Local Carpenter'},
+      {item:'Pantry Counter',desc:'Granite top, SS sink, 10ft',qty:1,size:'nos',rate:25000,vendor:'Stone Merchant'},
+      {item:'Microwave / Coffee Machine Provision',desc:'Electrical points + counter space',qty:1,size:'nos',rate:8000,vendor:'Electrician'},
+    ],
+    'Electrical & Infra': [
+      {item:'Electrical — Complete',desc:'DB boxes, wiring, outlets, UPS provision',qty:1,size:'lumpsum',rate:180000,vendor:'Licensed Electrician'},
+      {item:'Data & Network Cabling',desc:'CAT6 cabling, patch panels, server room',qty:1,size:'lumpsum',rate:95000,vendor:'IT Infra Vendor'},
+      {item:'Fire Safety System',desc:'Sprinklers, smoke detectors, exit signage',qty:1,size:'lumpsum',rate:85000,vendor:'Fire Contractor'},
+      {item:'HVAC — Commercial',desc:'VRF/VRV system, all zones',qty:1,size:'lumpsum',rate:350000,vendor:'Daikin Contractor'},
+    ],
+    'Miscellaneous': [
+      {item:'Signage & Branding',desc:'Room nameplates, floor signs, wayfinding',qty:1,size:'lumpsum',rate:35000,vendor:'Signage Vendor'},
+      {item:'Contingency',desc:'10% buffer',qty:1,size:'lumpsum',rate:80000,vendor:''},
+    ],
+  },
 
-Return ONLY valid JSON in this exact format, no markdown:
-{
-  "items": [
-    {"room":"Living Room","item":"Italian Marble Flooring","desc":"24x24 polished Statuario marble, 18mm thick","qty":450,"size":"sqft","rate":180,"vendor":"Kajaria Ceramics"},
-    {"room":"Living Room","item":"Sofa Set","desc":"7-seater L-shaped, premium fabric upholstery, teak wood frame","qty":1,"size":"nos","rate":85000,"vendor":"Urban Ladder"},
-    {"room":"Miscellaneous","item":"Miscellaneous Expenses","desc":"Unforeseen costs, touch-ups, consumables","qty":1,"size":"lumpsum","rate":50000,"vendor":""}
-  ]
-}`;
+  // ── COMMERCIAL (Retail / Café / Restaurant) ──────────────────────
+  commercial: {
+    'Entrance & Facade': [
+      {item:'Facade Cladding — ACP',desc:'Alucobond cladding, custom printed',qty:200,size:'sqft',rate:320,vendor:'ACP Fabricator'},
+      {item:'Signage — Illuminated',desc:'LED backlit, acrylic letters, channel',qty:1,size:'nos',rate:45000,vendor:'Signage Vendor'},
+      {item:'Entrance Door — Glass',desc:'Frameless 12mm toughened, auto sensor',qty:1,size:'nos',rate:65000,vendor:'Glass Contractor'},
+    ],
+    'Seating Area': [
+      {item:'Floor — Engineered Wood',desc:'Oak laminate, commercial grade AC5',qty:800,size:'sqft',rate:145,vendor:'Pergo'},
+      {item:'Tables — Café Style',desc:'Round/square, marble top, metal base',qty:20,size:'nos',rate:8500,vendor:'Local Fabricator'},
+      {item:'Chairs',desc:'Metal bistro, powder coat, stackable',qty:60,size:'nos',rate:3500,vendor:'Local Fabricator'},
+      {item:'Booth Seating',desc:'Custom upholstered banquette, per linear ft',qty:30,size:'rft',rate:4500,vendor:'Upholstery Vendor'},
+      {item:'Pendant Lights',desc:'Industrial Edison, 8 lights',qty:8,size:'nos',rate:4500,vendor:'Lightcraft'},
+      {item:'False Ceiling — Exposed',desc:'Painted exposed concrete effect, spot track lights',qty:800,size:'sqft',rate:85,vendor:'Painter'},
+    ],
+    'Counter / Bar': [
+      {item:'Service Counter',desc:'Solid surface top, custom fabrication, 12ft',qty:1,size:'nos',rate:95000,vendor:'Fabricator'},
+      {item:'Bar Shelving — Backlit',desc:'Floating glass shelves, LED strip backlight',qty:1,size:'nos',rate:45000,vendor:'Carpenter'},
+      {item:'Coffee Equipment Provision',desc:'Plumbing, electrical for espresso machine',qty:1,size:'nos',rate:25000,vendor:'Plumber + Electrician'},
+    ],
+    'Kitchen / Prep Area': [
+      {item:'Commercial Kitchen Equipment',desc:'SS work tables, shelves, exhaust hood',qty:1,size:'lumpsum',rate:185000,vendor:'Kitchen Equipments Pvt'},
+      {item:'Kitchen Floor — Epoxy',desc:'Anti-skid epoxy coating, food-safe',qty:300,size:'sqft',rate:180,vendor:'Epoxy Contractor'},
+      {item:'Kitchen Tiles — Wall',desc:'Full height ceramic, easy clean',qty:300,size:'sqft',rate:85,vendor:'Kajaria Ceramics'},
+    ],
+    'Washrooms': [
+      {item:'Sanitary Ware — Commercial',desc:'Wall-hung WC, sensor taps, hand dryer',qty:1,size:'lumpsum',rate:85000,vendor:'American Standard'},
+      {item:'Tile — Floor & Wall',desc:'Full height, anti-skid floor',qty:300,size:'sqft',rate:90,vendor:'Somany'},
+      {item:'Vanity & Mirror',desc:'Backlit mirror, floating vanity',qty:1,size:'nos',rate:28000,vendor:'Local Vendor'},
+    ],
+    'MEP & Services': [
+      {item:'Electrical — Complete',desc:'3-phase, lighting, AC, kitchen circuits',qty:1,size:'lumpsum',rate:150000,vendor:'Electrician'},
+      {item:'Plumbing — Complete',desc:'Hot & cold, kitchen + washrooms',qty:1,size:'lumpsum',rate:85000,vendor:'Plumber'},
+      {item:'HVAC',desc:'Cassette ACs, fresh air, exhaust',qty:1,size:'lumpsum',rate:180000,vendor:'AC Contractor'},
+      {item:'Fire Extinguishers & Exit Signs',desc:'As per NBC norms',qty:1,size:'lumpsum',rate:35000,vendor:'Fire Vendor'},
+    ],
+    'Miscellaneous': [
+      {item:'Contingency',desc:'10% buffer',qty:1,size:'lumpsum',rate:65000,vendor:''},
+    ],
+  },
 
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2500,messages:[{role:'user',content:prompt}]})});
-    if(!res.ok){ const t=await res.text(); throw new Error('API error '+res.status+': '+t.slice(0,100)); }
-    const d=await res.json();
-    if(d.error) throw new Error(d.error.message);
-    if(!d.content||!d.content.length) throw new Error('Empty response from API');
-    let text=(d.content||[]).map(b=>b.text||'').join('').trim();
-    text=text.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    const jsonMatch=text.match(/\{[\s\S]*\}/); if(!jsonMatch) throw new Error('No JSON in response');
-    const parsed=JSON.parse(jsonMatch[0]);
-    let added=0;
-    parsed.items.forEach(it=>{
-      const qty=parseFloat(it.qty)||0, rate=parseFloat(it.rate)||0;
-      const newItem={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5)+'_ai',
-        projId:boqProjId,room:it.room||sections[0]||'Living Room',
-        item:it.item,desc:it.desc,qty:it.qty,size:it.size,rate:it.rate,
-        total:qty&&rate?(qty*rate).toFixed(0):'0',vendor:it.vendor||'',
-        status:'Pending',orderDate:'',cost:'',notes:'AI Generated',billCount:0,createdAt:Date.now()};
-      if(!data.rooms.includes(it.room)&&it.room) data.rooms.splice(data.rooms.indexOf('Miscellaneous'),0,it.room);
-      data.items.push(newItem);
-      BOQDB.addToLib('item_lib',it.item);
-      BOQDB.addToLib('desc_lib',it.desc);
-      BOQDB.addToLib('vendor_lib',it.vendor||'');
-      added++;
-    });
-    BOQDB.saveData(boqProjId,data);
-    boqRender();
-    toast(`✦ AI generated ${added} BOQ items! Review and edit as needed.`);
-  }catch(e){
-    console.error(e);
-    toast('⚠️ AI generation failed. Add items manually.');
+  // ── WAREHOUSE / INDUSTRIAL ───────────────────────────────────────
+  warehouse: {
+    'Main Floor': [
+      {item:'Epoxy Floor Coating',desc:'2-coat industrial epoxy, anti-static, 3mm',qty:5000,size:'sqft',rate:85,vendor:'Epoxy Contractor'},
+      {item:'Storage Racking — Heavy Duty',desc:'Pallet racking, 5 levels, 1000kg per shelf',qty:20,size:'nos',rate:18000,vendor:'Godrej Storage'},
+      {item:'Industrial Lighting',desc:'100W LED highbay, 6m mounting height',qty:30,size:'nos',rate:6500,vendor:'Philips'},
+      {item:'Loading Dock — Leveller',desc:'Hydraulic dock leveller, 6-ton capacity',qty:2,size:'nos',rate:85000,vendor:'Stertil-Koni'},
+    ],
+    'Office Cabin': [
+      {item:'Prefab Office Cabin',desc:'Modular prefab, 200 sqft, AC provision',qty:1,size:'nos',rate:185000,vendor:'Runal Fabricators'},
+      {item:'Office Furniture — Basic',desc:'Desks, chairs, storage, 4 persons',qty:1,size:'lumpsum',rate:65000,vendor:'Godrej Interio'},
+    ],
+    'Services': [
+      {item:'Electrical — Industrial',desc:'HT/LT panel, wiring, earthing, DG provision',qty:1,size:'lumpsum',rate:350000,vendor:'Electrical Contractor'},
+      {item:'Fire Suppression System',desc:'Sprinkler system, fire hydrant, extinguishers',qty:1,size:'lumpsum',rate:185000,vendor:'Fire Contractor'},
+      {item:'CCTV & Security',desc:'32 camera NVR system, access control',qty:1,size:'lumpsum',rate:95000,vendor:'Security Vendor'},
+      {item:'Drainage — Floor Drains',desc:'Industrial floor drains, channels',qty:1,size:'lumpsum',rate:45000,vendor:'Plumber'},
+    ],
+    'Miscellaneous': [
+      {item:'Signage & Safety Markings',desc:'Floor markings, safety signs, exit signs',qty:1,size:'lumpsum',rate:35000,vendor:''},
+      {item:'Contingency',desc:'10% buffer',qty:1,size:'lumpsum',rate:75000,vendor:''},
+    ],
+  },
+
+  // ── OTHER / DEFAULT ──────────────────────────────────────────────
+  other: {
+    'Main Space': [
+      {item:'Flooring',desc:'Vitrified tiles 800x800mm',qty:500,size:'sqft',rate:90,vendor:'Kajaria Ceramics'},
+      {item:'False Ceiling',desc:'Gypsum board false ceiling with lighting',qty:500,size:'sqft',rate:100,vendor:'Saint Gobain'},
+      {item:'Wall Paint',desc:'Interior emulsion, 2 coats',qty:2000,size:'sqft',rate:25,vendor:'Asian Paints'},
+      {item:'Electrical Work',desc:'Complete wiring, switches, fixtures',qty:1,size:'lumpsum',rate:85000,vendor:'Electrician'},
+    ],
+    'Miscellaneous': [
+      {item:'Contingency',desc:'10% buffer for unforeseen costs',qty:1,size:'lumpsum',rate:40000,vendor:''},
+    ],
+  },
+};
+
+// ── SMART ROOM MATCHING ──────────────────────────────────────────────────────
+// Matches actual project rooms to template rooms
+function matchRoomToTemplate(roomName, templateRooms){
+  const n = roomName.toLowerCase();
+  const direct = templateRooms.find(r=>r.toLowerCase()===n);
+  if(direct) return direct;
+  const keywords = {
+    'living':['living room','lounge','hall'],
+    'master':['master bedroom','master bath'],
+    'kitchen':['kitchen'],
+    'bathroom':['master bathroom','bathroom','toilet','wash'],
+    'dining':['dining room','dining'],
+    'kids':['kids bedroom','bedroom'],
+    'balcony':['balcony','terrace'],
+    'bedroom':['master bedroom','kids bedroom'],
+    'reception':['reception','lobby'],
+    'open office':['open office','workstation'],
+    'cabin':['cabins','cabin'],
+    'meeting':['meeting room','conference'],
+    'pantry':['pantry','break room'],
+    'seating':['seating area','cafe','restaurant'],
+    'counter':['counter / bar','bar','counter'],
+    'warehouse':['main floor'],
+  };
+  for(const [key, alts] of Object.entries(keywords)){
+    if(n.includes(key)) {
+      for(const alt of alts){
+        const match = templateRooms.find(r=>r.toLowerCase()===alt.toLowerCase());
+        if(match) return match;
+      }
+    }
   }
-  btn.disabled=false; btn.innerHTML='✦ AI Generate BOQ';
+  return null; // No match — use Miscellaneous
 }
+
+// ── MAIN: INSTANT BOQ GENERATION ────────────────────────────────────────────
+async function boqAutoGenerate(){
+  if(!boqProjId){ toast('Select a project first'); return; }
+
+  const btn = document.getElementById('boq-ai-btn');
+  btn.disabled=true; btn.textContent='⟳ Building…';
+
+  const data = BOQDB.getData(boqProjId);
+  const proj = getAllBOQProjs().find(p=>p.id===boqProjId);
+  const projType = (proj?.type||'flat').toLowerCase().replace('-','');
+  const template = BOQ_TEMPLATES[projType] || BOQ_TEMPLATES['other'];
+  const templateRooms = Object.keys(template);
+
+  // Get project rooms from wizard or existing BOQ rooms
+  const rhProj = getAllRHProjs().find(p=>p.id===boqProjId);
+  const projectRooms = (rhProj?.sections||data.rooms||[]).filter(r=>r!=='Miscellaneous');
+
+  // Show preview modal instead of directly adding
+  showBOQPreview(template, templateRooms, projectRooms, projType, proj?.name||'Project');
+  btn.disabled=false; btn.innerHTML='✦ Generate BOQ';
+}
+
+// ── BOQ PREVIEW MODAL ─────────────────────────────────────────────────────────
+function showBOQPreview(template, templateRooms, projectRooms, projType, projName){
+  // Build preview: match project rooms to template, calculate total
+  const roomsToUse = [];
+
+  if(projectRooms.length > 0){
+    // Use actual project rooms
+    projectRooms.forEach(room=>{
+      const match = matchRoomToTemplate(room, templateRooms);
+      if(match && template[match]){
+        roomsToUse.push({display:room, templateKey:match, items:template[match]});
+      }
+    });
+  }
+  // Always add remaining unmatched template rooms + Miscellaneous
+  const usedKeys = new Set(roomsToUse.map(r=>r.templateKey));
+  if(!usedKeys.size){
+    // No project rooms — use all template rooms
+    templateRooms.forEach(key=>{
+      roomsToUse.push({display:key, templateKey:key, items:template[key]});
+    });
+  } else {
+    // Add Miscellaneous always
+    if(template['Miscellaneous'] && !usedKeys.has('Miscellaneous')){
+      roomsToUse.push({display:'Miscellaneous', templateKey:'Miscellaneous', items:template['Miscellaneous']});
+    }
+    // Add type-specific extra rooms (Electrical, Civil for flat)
+    ['Electrical','Civil Work','MEP & Services','Electrical & Infra','Services'].forEach(extra=>{
+      if(template[extra] && !usedKeys.has(extra)){
+        roomsToUse.push({display:extra, templateKey:extra, items:template[extra]});
+      }
+    });
+  }
+
+  const allItems = roomsToUse.flatMap(r=>r.items.map(it=>({...it, room:r.display})));
+  const grandTotal = allItems.reduce((s,it)=>s+(parseFloat(it.qty||0)*parseFloat(it.rate||0)),0);
+  const typeLabel = {flat:'Residential Flat',villa:'Villa',office:'Office',commercial:'Commercial / Retail',warehouse:'Warehouse / Industrial',other:'General'}[projType]||projType;
+
+  const modal = document.createElement('div');
+  modal.id='boq-preview-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML=`
+    <div style="background:#FDFCFA;border-radius:20px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(28,26,23,.25);overflow:hidden">
+      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:4px">✦ BOQ Template Ready</div>
+        <div style="font-size:.73rem;color:var(--muted)">${projName} · ${typeLabel} · ${allItems.length} line items · Est. <strong style="color:var(--ink)">₹${fmt(grandTotal)}</strong></div>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:16px 24px">
+        <div style="background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.15);border-radius:10px;padding:11px 14px;font-size:.72rem;color:var(--ink2);margin-bottom:16px;line-height:1.7">
+          ✏️ <strong>These are Indian market estimates.</strong> Review quantities and rates before saving — edit any item after import using the ✏️ button in the cost sheet.
+        </div>
+        ${roomsToUse.map(r=>`
+          <div style="margin-bottom:18px">
+            <div style="font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">${r.display}</div>
+            <table style="width:100%;border-collapse:collapse;font-size:.72rem">
+              <thead><tr style="color:var(--muted)">
+                <th style="text-align:left;padding:4px 8px 4px 0;font-weight:500">Item</th>
+                <th style="text-align:right;padding:4px;font-weight:500;white-space:nowrap">Qty</th>
+                <th style="text-align:right;padding:4px;font-weight:500">Rate</th>
+                <th style="text-align:right;padding:4px 0 4px 4px;font-weight:500">Amount</th>
+              </tr></thead>
+              <tbody>${r.items.map(it=>`<tr style="border-top:1px solid var(--border)">
+                <td style="padding:5px 8px 5px 0">
+                  <div style="font-weight:500;color:var(--ink)">${it.item}</div>
+                  <div style="color:var(--muted);font-size:.63rem">${it.desc}</div>
+                </td>
+                <td style="text-align:right;padding:5px 4px;color:var(--muted);white-space:nowrap">${it.qty} ${it.size}</td>
+                <td style="text-align:right;padding:5px 4px;color:var(--muted)">₹${fmt(it.rate)}</td>
+                <td style="text-align:right;padding:5px 0 5px 4px;font-weight:500;color:var(--ink)">₹${fmt(it.qty*it.rate)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>`).join('')}
+        <div style="text-align:right;padding:12px 0;border-top:2px solid var(--border);font-size:.9rem;font-weight:600">Grand Total: ₹${fmt(grandTotal)}</div>
+      </div>
+      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;justify-content:flex-end">
+        <button class="btn-ghost" onclick="document.getElementById('boq-preview-modal').remove()">Cancel</button>
+        <button class="btn" style="background:#5E7260" onclick="boqImportTemplate(${JSON.stringify(allItems).replace(/"/g,'&quot;')})">✓ Add to BOQ →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function boqImportTemplate(items){
+  document.getElementById('boq-preview-modal')?.remove();
+  const data = BOQDB.getData(boqProjId);
+  let added = 0;
+  items.forEach(it=>{
+    const qty=parseFloat(it.qty)||0, rate=parseFloat(it.rate)||0;
+    const newItem = {
+      id: Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+      projId: boqProjId,
+      room: it.room,
+      item: it.item,
+      desc: it.desc,
+      qty: it.qty,
+      size: it.size,
+      rate: it.rate,
+      total: qty&&rate?(qty*rate).toFixed(0):'0',
+      vendor: it.vendor||'',
+      status: 'Pending',
+      orderDate: '',
+      cost: '',
+      notes: 'Template',
+      billCount: 0,
+      createdAt: Date.now()
+    };
+    if(!data.rooms.includes(it.room) && it.room){
+      const miscIdx = data.rooms.indexOf('Miscellaneous');
+      miscIdx>=0 ? data.rooms.splice(miscIdx,0,it.room) : data.rooms.push(it.room);
+    }
+    data.items.push(newItem);
+    BOQDB.addToLib('item_lib', it.item);
+    BOQDB.addToLib('vendor_lib', it.vendor||'');
+    added++;
+  });
+  BOQDB.saveData(boqProjId, data);
+  boqRender();
+  toast(`✦ ${added} items added to BOQ — edit rates as needed`);
+  updateProjStats();
+}
+
 
 // ── Export CSV ────────────────────────────────────────────────────────────────
 function boqExportCSV(){
@@ -6573,7 +6970,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   const hash=location.hash;
   if(hash.startsWith('#snag/')){
     const token=hash.replace('#snag/','');
-    setTimeout(()=>loadSnagPortal(token),120);
+    setTimeout(()=>loadSnagPortal(token),120);Zzzzz
   }
 });
 
