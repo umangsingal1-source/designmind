@@ -4591,6 +4591,23 @@ function hpLoginPassword(){
     }
 
     // ── No profile found at all ───────────────────────────────────────────
+    // Last resort: check dm_leads (signup index) — rebuild profile from there
+    if(!prof || !prof.phone){
+      try{
+        const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+        const lead = leads.find(l=>l.phone===phone);
+        if(lead){
+          // Rebuild a minimal profile from lead data — password will be set on login
+          prof = {
+            name: lead.name, phone: lead.phone, nameId: lead.nameId||'',
+            company: lead.company||'', position: lead.position||'',
+            companyEmail: lead.companyEmail||'', insta: lead.insta||'',
+            status: 'approved', joinedAt: lead.ts||Date.now()
+          };
+        }
+      }catch(e){}
+    }
+
     if(!prof || !prof.phone){
       toast('❌ No account found for +91 '+phone+'. Please Request Access first.'); resetBtn(); return;
     }
@@ -4641,22 +4658,22 @@ function showResetPassword(){
   modal.innerHTML = `
     <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.25)">
       <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:4px">Reset Password</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6">Verify your identity to reset your password.</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6">Enter your mobile number to verify identity.</div>
 
       <!-- Step 1: Verify -->
       <div id="reset-step1">
         <div class="fg" style="margin-bottom:12px">
-          <label class="fl">Name ID <span style="color:var(--rust)">*</span></label>
-          <div style="display:flex;align-items:center;gap:6px">
-            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0">@</span>
-            <input class="fi" id="reset-nameid" placeholder="your_name_id" style="flex:1;font-family:monospace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
-          </div>
-        </div>
-        <div class="fg" style="margin-bottom:18px">
           <label class="fl">Mobile Number <span style="color:var(--rust)">*</span></label>
           <div style="display:flex;gap:8px">
             <span style="display:flex;align-items:center;font-size:.8rem;color:var(--muted);padding:0 8px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">🇮🇳 +91</span>
             <input class="fi" id="reset-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1" oninput="this.value=this.value.replace(/\\D/g,'')">
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:18px">
+          <label class="fl">Name ID <span style="font-size:.6rem;color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0">(leave blank if you don't have one yet)</span></label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0">@</span>
+            <input class="fi" id="reset-nameid" placeholder="your_name_id  (optional)" style="flex:1;font-family:monospace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
           </div>
         </div>
         <div id="reset-verify-err" style="font-size:.72rem;color:var(--rust);margin-bottom:10px;display:none"></div>
@@ -4690,34 +4707,35 @@ function showResetPassword(){
 }
 
 function doVerifyResetIdentity(){
-  const nameId = document.getElementById('reset-nameid').value.trim().toLowerCase();
   const phone  = document.getElementById('reset-phone').value.trim();
+  const nameId = (document.getElementById('reset-nameid')?.value.trim()||'').toLowerCase();
   const errEl  = document.getElementById('reset-verify-err');
 
-  if(!nameId){ errEl.textContent='Please enter your Name ID'; errEl.style.display='block'; return; }
   if(!/^\d{10}$/.test(phone)){ errEl.textContent='Enter your 10-digit mobile number'; errEl.style.display='block'; return; }
 
-  // Temporarily set phone in dm_user so LS resolves the correct profile key
-  const prevUser = localStorage.getItem('dm_user');
-  localStorage.setItem('dm_user', JSON.stringify({phone}));
-  let prof = PROFDB.get();
-  if(!prof.phone){ try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; } }
-
-  // Restore user immediately — verification only
-  if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
-
-  if(!prof.phone || prof.phone !== phone){
-    errEl.textContent = '❌ No account found for this number'; errEl.style.display='block'; return;
+  // Find profile — scoped key, old global key, then leads index
+  let prof = null;
+  try{ const s=localStorage.getItem('dm_'+phone+'_profile'); if(s){ const p=JSON.parse(s); if(p&&p.phone===phone) prof=p; } }catch(e){}
+  if(!prof){ try{ const o=localStorage.getItem('dm_profile'); if(o){ const p=JSON.parse(o); if(p&&p.phone===phone) prof=p; } }catch(e){} }
+  if(!prof){
+    try{
+      const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
+      const lead=leads.find(l=>l.phone===phone);
+      if(lead) prof={name:lead.name,phone:lead.phone,nameId:lead.nameId||'',status:'approved'};
+    }catch(e){}
   }
-  if(prof.status === 'denied' || prof.status === 'blocked'){
-    errEl.textContent = '❌ Account is not active'; errEl.style.display='block'; return;
+
+  if(!prof || prof.phone !== phone){
+    errEl.textContent='❌ No account found for this number'; errEl.style.display='block'; return;
   }
+  if(prof.status==='denied'||prof.status==='blocked'){
+    errEl.textContent='❌ Account is not active'; errEl.style.display='block'; return;
+  }
+
+  // nameId: only check if account HAS one stored AND user typed something
   const storedNameId = (prof.nameId||'').toLowerCase();
-  if(!storedNameId){
-    // Legacy account with no nameId — allow reset with phone only, prompt to set nameId after
-    errEl.style.display='none';
-  } else if(storedNameId !== nameId){
-    errEl.textContent = '❌ Name ID does not match our records'; errEl.style.display='block'; return;
+  if(storedNameId && nameId && storedNameId !== nameId){
+    errEl.textContent='❌ Name ID does not match our records'; errEl.style.display='block'; return;
   }
 
   // Verified — show step 2
@@ -4735,10 +4753,17 @@ function doResetPassword(){
   if(!pwd1 || pwd1.length < 8){ toast('Password must be at least 8 characters'); return; }
   if(pwd1 !== pwd2){ toast('Passwords do not match'); return; }
 
-  // Find profile directly — scoped key first, then old global key
+  // Find profile directly — scoped key first, then old global, then leads index
   let prof = null;
   try{ const s=localStorage.getItem('dm_'+phone+'_profile'); if(s){ const p=JSON.parse(s); if(p&&p.phone===phone) prof=p; } }catch(e){}
   if(!prof){ try{ const o=localStorage.getItem('dm_profile'); if(o){ const p=JSON.parse(o); if(p&&p.phone===phone) prof=p; } }catch(e){} }
+  if(!prof){
+    try{
+      const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
+      const lead=leads.find(l=>l.phone===phone);
+      if(lead) prof={name:lead.name,phone:lead.phone,nameId:lead.nameId||'',status:'approved'};
+    }catch(e){}
+  }
   if(!prof){ toast('❌ Something went wrong. Please try again.'); return; }
 
   prof.password = btoa(pwd1);
