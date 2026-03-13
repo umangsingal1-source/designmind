@@ -1149,7 +1149,10 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
           <button class="hp-submit green" id="su-btn" onclick="hpSubmitSignup()" disabled>Submit for Approval →</button>
 
           <div class="hp-divider" style="margin:14px 0"><span>or</span></div>
-          <button class="btn-ghost" style="width:100%;font-size:.76rem" onclick="hpSkip()">🎭 Continue as Demo</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn-ghost" style="width:100%;font-size:.76rem" onclick="hpSkip()">🎭 Continue as Demo</button>
+            <button class="btn-ghost" style="width:100%;font-size:.76rem;color:var(--blue);border-color:rgba(58,107,138,.3)" onclick="openRequestDemoModal()">📞 Request a Demo Call</button>
+          </div>
         </div>
 
         <div class="hp-footer">
@@ -1783,6 +1786,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <select class="bfs" id="rh-proj-sel" onchange="loadRenderProject(this.value)" style="background:#FDFCFA;border:1px solid var(--border);border-radius:100px;padding:8px 24px 8px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;outline:none;cursor:pointer;min-width:180px"></select>
       <button class="btn-ghost btn-sm" onclick="openRHUpload()">+ Add Images</button>
+      <button class="btn btn-sm" style="background:#5E7260" onclick="saveRendersToSheets()">💾 Save Renders</button>
       <button class="btn btn-sm" style="background:#B8884A" onclick="openShareModal()">🔗 Share with Client</button>
     </div>
   </div>
@@ -3884,11 +3888,18 @@ function mkRHItem(img){
   const statusHtml = img.status==='approved'?`<span class="rh-stag rh-st-app">✅</span>`:img.status==='changes'?`<span class="rh-stag rh-st-chg">🔄</span>`:'';
   const cls = img.status==='approved'?' approved':img.status==='changes'?' changes':'';
   const cc = img.comments.length;
+  const isFav = FAVDB.get().some(f=>f.dataUrl===img.dataUrl);
+  const escapedUrl = (img.dataUrl||'').replace(/'/g,"\\'");
   return `<div class="rh-item${cls}" id="rhi-${img.id}">
     <img src="${img.dataUrl}" alt="${img.section}" loading="lazy" onclick="openAnnotation('${img.id}')">
     <div class="rh-ov"></div>
     ${cc?`<div class="rh-cmt-dot">${cc}</div>`:''}
     <div class="rh-status">${statusHtml}</div>
+    <button data-fav="${isFav?'1':'0'}" onclick="rendersToggleFav('${escapedUrl}',this);event.stopPropagation()"
+      style="position:absolute;top:7px;left:7px;background:${isFav?'rgba(168,77,58,.88)':'rgba(247,244,239,.88)'};border:none;cursor:pointer;font-size:.85rem;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.18);transition:all .18s;z-index:2"
+      title="${isFav?'Remove from favourites':'Save to favourites'}">
+      ${isFav?'<span style="color:white">❤️</span>':'❤️'}
+    </button>
     <div class="rh-acts">
       <button class="rha rha-app" onclick="rhQuickStatus('${img.id}','approved',event)">✅</button>
       <button class="rha rha-chg" onclick="rhQuickStatus('${img.id}','changes',event)">🔄</button>
@@ -3948,8 +3959,27 @@ async function renderRHShare(proj){
   const shareUrl = location.origin+location.pathname+'#client/'+proj.shareToken;
   const imgs = await RH.getProjImgs(rhProjId);
   const approved = imgs.filter(i=>i.status==='approved').length;
+
+  // Check if renders have been saved for this project
+  const savedProjs = JSON.parse(localStorage.getItem('dm_renders_saved')||'{}');
+  const saveInfo = savedProjs[rhProjId];
+  const isSaved = !!saveInfo;
+
+  const saveWarningHtml = !isSaved ? `
+    <div style="background:rgba(184,136,74,.08);border:2px solid rgba(184,136,74,.35);border-radius:12px;padding:18px 20px;margin-bottom:20px;text-align:center">
+      <div style="font-size:1.6rem;margin-bottom:8px">💾</div>
+      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:300;margin-bottom:6px;color:var(--ink)">Save renders before sharing</div>
+      <div style="font-size:.75rem;color:var(--muted);line-height:1.7;margin-bottom:14px">Save your renders to confirm them in the library and enable the client portal link.</div>
+      <button class="btn" style="background:#B8884A" onclick="saveRendersToSheets()">💾 Save Renders Now →</button>
+    </div>` : `
+    <div style="background:rgba(94,114,96,.07);border:1px solid rgba(94,114,96,.25);border-radius:9px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.1rem">✅</span>
+      <div style="font-size:.73rem;color:var(--sage)">Renders saved on ${new Date(saveInfo.savedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · ${saveInfo.count} image${saveInfo.count!==1?'s':''} synced to Google Sheet</div>
+    </div>`;
+
   document.getElementById('rh-share-html').innerHTML=`
-    <div class="share-box">
+    ${saveWarningHtml}
+    <div class="share-box" style="${!isSaved?'opacity:.5;pointer-events:none':''}">
       <div style="font-family:'Fraunces',serif;font-size:1.05rem;font-weight:300;margin-bottom:4px">Client Portal Link</div>
       <div style="font-size:.73rem;color:rgba(255,255,255,.55);margin-bottom:14px;line-height:1.55">Share with <strong>${proj.client||'client'}</strong> — no login needed. They browse renders, approve images, request changes, and leave pinned notes.</div>
       <div style="display:flex;gap:7px">
@@ -3965,12 +3995,12 @@ async function renderRHShare(proj){
       <div class="rh-sec"><div style="padding:16px;text-align:center">
         <div style="font-family:'Fraunces',serif;font-size:2rem;font-weight:300;color:#5E7260">${approved}</div>
         <div style="font-size:.73rem;color:var(--muted);margin-bottom:14px">images approved by client</div>
-        <button class="btn btn-sm" style="background:#5E7260" onclick="copyLink('${shareUrl}')">📋 Copy &amp; Send</button>
+        <button class="btn btn-sm" style="background:#5E7260;${!isSaved?'opacity:.4;pointer-events:none':''}" onclick="copyLink('${shareUrl}')">📋 Copy &amp; Send</button>
       </div></div>
     </div>
     <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.2);border-radius:9px;padding:13px 17px;font-size:.77rem;color:var(--ink2);line-height:1.7">
       <strong style="color:#B8884A">💡 How it works:</strong><br>
-      1. Copy the link and send via WhatsApp / email<br>
+      1. Save renders → copy the link → send via WhatsApp / email<br>
       2. Client opens it — no login needed<br>
       3. They ❤️ approve images and 🔄 request changes with notes<br>
       4. Their feedback updates your dashboard instantly<br>
@@ -4526,65 +4556,81 @@ function hpLoginPassword(){
   if(!/^\d{10}$/.test(phone)){ toast('Enter your 10-digit mobile number'); document.getElementById('login-phone')?.focus(); return; }
   if(!pwd){ toast('Please enter your password'); document.getElementById('login-pwd')?.focus(); return; }
 
-  // Loading state
   if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
 
-  setTimeout(()=>{ // small delay for feel
-    // Temporarily set dm_user with phone so LS can resolve the correct profile key
-    const prevUser = localStorage.getItem('dm_user');
-    localStorage.setItem('dm_user', JSON.stringify({phone}));
-    let prof = PROFDB.get();
+  setTimeout(()=>{
+    const resetBtn = ()=>{ if(btn){ btn.disabled=false; btn.textContent='Sign In →'; } };
 
-    // ── FALLBACK: check old global key (pre-migration) ────────────────────
-    // If new scoped key is empty, try the old flat 'dm_profile' key
-    if(!prof.phone){
-      try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; }
+    // ── Find profile using every possible storage key ──────────────────────
+    // 1. New scoped key: dm_{phone}_profile
+    // 2. Old global key: dm_profile
+    // 3. Leads index (has password from signup)
+    let prof = null;
+
+    // Try scoped key
+    try{
+      const scoped = localStorage.getItem('dm_'+phone+'_profile');
+      if(scoped){ const p=JSON.parse(scoped); if(p && p.phone===phone) prof=p; }
+    }catch(e){}
+
+    // Try old global key
+    if(!prof || !prof.phone){
+      try{
+        const old = localStorage.getItem('dm_profile');
+        if(old){ const p=JSON.parse(old); if(p && p.phone===phone) prof=p; }
+      }catch(e){}
     }
 
-    const restore = ()=>{
-      if(prevUser) localStorage.setItem('dm_user', prevUser);
-      else localStorage.removeItem('dm_user');
-      if(btn){ btn.disabled=false; btn.textContent='Sign In →'; }
-    };
-
-    if(!prof.phone || prof.phone !== phone){
-      toast('No account found for this number'); restore(); return;
-    }
-    if(prof.status==='denied' || prof.status==='blocked'){
-      toast('❌ This account has been suspended. Contact umangsingal1@gmail.com'); restore(); return;
-    }
-    // Check global blocked list
+    // ── Blocked check ─────────────────────────────────────────────────────
     const blockedNums = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
     if(blockedNums.includes(phone)){
-      toast('❌ This account has been suspended.'); restore(); return;
+      toast('❌ This account has been suspended.'); resetBtn(); return;
     }
+    if(prof && (prof.status==='blocked' || prof.status==='denied')){
+      toast('❌ This account has been suspended. Contact support.'); resetBtn(); return;
+    }
+
+    // ── No profile found at all ───────────────────────────────────────────
+    if(!prof || !prof.phone){
+      toast('❌ No account found for +91 '+phone+'. Please Request Access first.'); resetBtn(); return;
+    }
+
+    // ── Password check ────────────────────────────────────────────────────
+    // If no password set yet (first login after manual approval), set it now
     if(!prof.password){
       prof.password = btoa(pwd);
-      prof.status = 'approved';
-      PROFDB.save(prof); // saves to new scoped key
-      migrateAllUserData(phone); // migrate everything else
-      localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
-      profRefreshDisplay();
-      toast('✦ Welcome, '+(prof.name||'Designer').split(' ')[0]+'!');
-      hpEnterApp(false); return;
+      prof.rawPwd   = pwd;
+      prof.status   = 'approved';
+      // Save to scoped key
+      localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
+      localStorage.setItem('dm_user', JSON.stringify({name:prof.name, phone, status:'approved', mode:'full'}));
+      migrateAllUserData(phone);
+      profRefreshDisplay(prof);
+      if(btn) btn.textContent='✓ Welcome!';
+      setTimeout(()=>hpEnterApp(false), 400);
+      return;
     }
+
     if(prof.password !== btoa(pwd)){
       if(errEl){
-        errEl.innerHTML = '❌ Incorrect password. <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="showResetPassword()">Forgot password?</span>';
+        errEl.innerHTML = '❌ Incorrect password. <span style="color:var(--gold);cursor:pointer;text-decoration:underline;font-weight:500" onclick="showResetPassword()">Forgot password?</span>';
         errEl.classList.add('show');
       }
       document.getElementById('login-pwd').value='';
-      document.getElementById('login-pwd').focus();
-      restore(); return;
+      setTimeout(()=>document.getElementById('login-pwd')?.focus(), 50);
+      resetBtn(); return;
     }
+
+    // ── Success ───────────────────────────────────────────────────────────
     prof.status = 'approved';
-    PROFDB.save(prof); // ensure saved under scoped key
-    migrateAllUserData(phone); // migrate all other keys if not done yet
-    localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
-    profRefreshDisplay();
-    if(btn){ btn.textContent='✓ Welcome back!'; }
+    // Always write to scoped key so future logins work
+    localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
+    localStorage.setItem('dm_user', JSON.stringify({name:prof.name, phone, status:'approved', mode:'full'}));
+    migrateAllUserData(phone);
+    profRefreshDisplay(prof);
+    if(btn) btn.textContent='✓ Welcome back!';
     setTimeout(()=>hpEnterApp(false), 400);
-  }, 320);
+  }, 300);
 }
 
 function showResetPassword(){
@@ -4689,21 +4735,19 @@ function doResetPassword(){
   if(!pwd1 || pwd1.length < 8){ toast('Password must be at least 8 characters'); return; }
   if(pwd1 !== pwd2){ toast('Passwords do not match'); return; }
 
-  // Temporarily set phone in dm_user so LS can resolve the correct profile key
-  const prevUser = localStorage.getItem('dm_user');
-  localStorage.setItem('dm_user', JSON.stringify({phone}));
-  let prof = PROFDB.get();
-  if(!prof.phone){ try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; } }
-
-  if(!prof.phone || prof.phone !== phone){
-    if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
-    toast('❌ Something went wrong. Please try again.'); return;
-  }
+  // Find profile directly — scoped key first, then old global key
+  let prof = null;
+  try{ const s=localStorage.getItem('dm_'+phone+'_profile'); if(s){ const p=JSON.parse(s); if(p&&p.phone===phone) prof=p; } }catch(e){}
+  if(!prof){ try{ const o=localStorage.getItem('dm_profile'); if(o){ const p=JSON.parse(o); if(p&&p.phone===phone) prof=p; } }catch(e){} }
+  if(!prof){ toast('❌ Something went wrong. Please try again.'); return; }
 
   prof.password = btoa(pwd1);
   prof.rawPwd   = pwd1;
   prof.status   = 'approved';
-  PROFDB.save(prof);
+  // Write directly to scoped key
+  localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
+  // Run migration to move any other old keys
+  localStorage.setItem('dm_user', JSON.stringify({phone}));
   migrateAllUserData(phone);
   localStorage.removeItem('dm_user');
 
@@ -5396,7 +5440,7 @@ function showPendingScreen(name, phone, alreadySubmitted){
 
 // ── PROFILE OPEN / SAVE ───────────────────────────────────────────────────────
 // Developer phone — only this number sees the admin panel
-const DEV_PHONE = '9999999999'; // ← replace with Umang's real number
+const DEV_PHONE = '9836266894'; // Umang's number — admin panel shown only for this account
 
 function openProfile(){
   if(_demoCheck('Profile')) return;
@@ -5539,6 +5583,173 @@ function devUnblockUser(phone){
   if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
   devRefreshUsers();
   toast('✅ Unblocked +91 '+phone);
+}
+
+// ── REQUEST DEMO MODAL ────────────────────────────────────────────────────────
+function openRequestDemoModal(){
+  document.getElementById('modal-request-demo')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'modal-request-demo';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:30px 26px;max-width:400px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.28)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+        <div style="width:40px;height:40px;border-radius:50%;background:rgba(58,107,138,.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">📞</div>
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300">Request a Demo Call</div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:1px">We'll call you at your preferred time — free, 20 minutes</div>
+        </div>
+      </div>
+
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Your Name <span style="color:var(--rust)">*</span></label>
+        <input class="fi" id="demo-req-name" placeholder="e.g. Priya Sharma" oninput="demoReqValidate()">
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Mobile Number <span style="color:var(--rust)">*</span></label>
+        <div style="display:flex;gap:8px">
+          <span style="display:flex;align-items:center;font-size:.8rem;color:var(--muted);padding:0 10px;background:var(--bg2);border-radius:8px;border:1px solid var(--border);white-space:nowrap">🇮🇳 +91</span>
+          <input class="fi" id="demo-req-phone" type="tel" maxlength="10" placeholder="9876543210" style="flex:1" oninput="this.value=this.value.replace(/\\D/g,'');demoReqValidate()">
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Preferred Date <span style="color:var(--rust)">*</span></label>
+        <input class="fi" id="demo-req-date" type="date" oninput="demoReqValidate()" min="${new Date().toISOString().slice(0,10)}">
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="fl">Preferred Time <span style="color:var(--rust)">*</span></label>
+        <select class="bfs fi" id="demo-req-time" style="width:100%" onchange="demoReqValidate()">
+          <option value="">— Choose a time slot —</option>
+          <option>9:00 AM – 10:00 AM</option><option>10:00 AM – 11:00 AM</option>
+          <option>11:00 AM – 12:00 PM</option><option>12:00 PM – 1:00 PM</option>
+          <option>2:00 PM – 3:00 PM</option><option>3:00 PM – 4:00 PM</option>
+          <option>4:00 PM – 5:00 PM</option><option>5:00 PM – 6:00 PM</option>
+          <option>6:00 PM – 7:00 PM</option>
+        </select>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('modal-request-demo').remove()">Cancel</button>
+        <button class="btn" id="demo-req-btn" style="flex:2;background:var(--blue)" onclick="submitDemoRequest()" disabled>Request Call →</button>
+      </div>
+      <div id="demo-req-success" style="display:none;margin-top:14px;background:rgba(94,114,96,.08);border:1px solid rgba(94,114,96,.25);border-radius:9px;padding:10px 14px;font-size:.73rem;color:var(--sage);line-height:1.7">
+        ✅ <strong>Request received!</strong> Umang will call you on +91 <span id="demo-req-phone-confirm"></span> on <span id="demo-req-time-confirm"></span>. You'll get a WhatsApp confirmation shortly.
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+  setTimeout(()=>document.getElementById('demo-req-name')?.focus(), 150);
+}
+
+function demoReqValidate(){
+  const name  = document.getElementById('demo-req-name')?.value.trim();
+  const phone = document.getElementById('demo-req-phone')?.value.trim();
+  const date  = document.getElementById('demo-req-date')?.value;
+  const time  = document.getElementById('demo-req-time')?.value;
+  const btn   = document.getElementById('demo-req-btn');
+  const ok = name && /^\d{10}$/.test(phone) && date && time;
+  if(btn){ btn.disabled=!ok; btn.style.opacity=ok?'1':'0.55'; }
+}
+
+async function submitDemoRequest(){
+  const name  = document.getElementById('demo-req-name').value.trim();
+  const phone = document.getElementById('demo-req-phone').value.trim();
+  const date  = document.getElementById('demo-req-date').value;
+  const time  = document.getElementById('demo-req-time').value;
+  const btn   = document.getElementById('demo-req-btn');
+
+  if(!name||!phone||!date||!time){ toast('Please fill all fields'); return; }
+  btn.disabled=true; btn.textContent='Sending…';
+
+  try{
+    await sendToSheets({
+      action: 'demo_request',
+      name, phone,
+      preferredDate: date,
+      preferredTime: time,
+      submittedAt: new Date().toLocaleString('en-IN')
+    });
+  } catch(e){ console.warn('Demo request sheets error',e); }
+
+  // Show success state
+  document.getElementById('demo-req-phone-confirm').textContent = phone;
+  document.getElementById('demo-req-time-confirm').textContent  = new Date(date).toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'}) + ', ' + time;
+  document.getElementById('demo-req-success').style.display = 'block';
+  btn.textContent = '✓ Submitted!';
+  btn.style.background = '#5E7260';
+  // Auto-close after 4s
+  setTimeout(()=>document.getElementById('modal-request-demo')?.remove(), 4000);
+  toast('📞 Demo request sent! Umang will call you soon.');
+}
+
+// ── SAVE RENDERS TO GOOGLE SHEETS ─────────────────────────────────────────────
+async function saveRendersToSheets(){
+  if(!rhProjId){ toast('Please select a project first'); return; }
+  const proj = getAllBOQProjs().find(p=>p.id===rhProjId);
+  const projName = proj?.name || rhProjId;
+  const designer = PROFDB.get().name || 'Designer';
+  const allImgs = await RH.getImgs();
+  const projImgs = allImgs.filter(i=>i.projectId===rhProjId);
+
+  if(!projImgs.length){ toast('No renders in this project to save'); return; }
+
+  // Update button to loading state
+  const saveBtn = document.querySelector('button[onclick="saveRendersToSheets()"]');
+  const origText = saveBtn?.textContent;
+  if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent='Saving…'; }
+
+  // Tag untagged renders into image library first
+  const taggedIds = new Set(RENDER_TAGS.get().map(t=>t.imgId));
+  let tagged = 0;
+  for(const img of projImgs){
+    if(!taggedIds.has(img.id)){
+      await analyseAndStoreRender(img.id, rhProjId, projName, img.dataUrl);
+      tagged++;
+    }
+  }
+
+  // Build share URL for reference
+  const shareUrl = location.origin + location.pathname + '#client/' + (proj?.shareToken || rhProjId);
+
+  // Send each render as a row to Sheets
+  let sent = 0;
+  for(const img of projImgs){
+    try{
+      await sendToSheets({
+        action: 'render_saved',
+        projectName: projName,
+        designerName: designer,
+        imageId: img.id,
+        section: img.section || '—',
+        note: img.note || '—',
+        status: img.status || 'pending',
+        clientPortalUrl: shareUrl,
+        uploadedAt: img.uploadedAt ? new Date(img.uploadedAt).toLocaleString('en-IN') : '—',
+        savedAt: new Date().toLocaleString('en-IN'),
+        totalImages: projImgs.length
+      });
+      sent++;
+    } catch(e){ console.warn('Sheet sync failed for img', img.id, e); }
+  }
+
+  // Mark project as saved in localStorage
+  const savedProjs = JSON.parse(localStorage.getItem('dm_renders_saved')||'{}');
+  savedProjs[rhProjId] = { savedAt: Date.now(), count: projImgs.length };
+  localStorage.setItem('dm_renders_saved', JSON.stringify(savedProjs));
+
+  // Update save button to show saved state
+  if(saveBtn){
+    saveBtn.disabled = false;
+    saveBtn.textContent = '✅ Saved!';
+    saveBtn.style.background = '#5E7260';
+    setTimeout(()=>{ if(saveBtn){ saveBtn.textContent = '💾 Save Renders'; saveBtn.style.background=''; } }, 3000);
+  }
+
+  toast(`✅ ${sent} render${sent!==1?'s':''} saved to Sheet${tagged?' · '+tagged+' added to Library':''}!`);
+  if(tagged) setTimeout(()=>updateRendersTabBadge(), 500);
+
+  // Refresh share tab if visible
+  if(document.getElementById('rh-pane-share')?.classList.contains('on')) renderRHShare(proj);
 }
 
 
