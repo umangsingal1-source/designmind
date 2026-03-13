@@ -2157,8 +2157,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 <div class="scr" id="s-profile">
   <div class="s-head">
     <div><h1 class="s-title">My <em>Profile</em></h1><p class="s-sub">Your account details, company info & preferences</p></div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn-ghost" onclick="goHome()">← Back</button>
+      <button class="btn-ghost" onclick="profExportCode()" title="Copy a sync code to use on another device">📲 Sync to Device</button>
       <button class="btn" style="background:#5E7260" onclick="saveProfile()">Save Changes →</button>
     </div>
   </div>
@@ -5971,6 +5972,89 @@ function profRefreshDisplay(prof){
 function profHandleAvatar(files){
   if(!files||!files.length) return;
   const r=new FileReader(); r.onload=e=>{ const url=e.target.result; document.getElementById('prof-av-img').src=url; document.getElementById('prof-av-img').style.display='block'; document.getElementById('prof-av-placeholder').style.display='none'; }; r.readAsDataURL(files[0]);
+}
+
+// ── PROFILE SYNC (cross-device) ───────────────────────────────────────────────
+function profExportCode(){
+  const prof = PROFDB.get();
+  if(!prof.phone){ toast('Save your profile first'); return; }
+  // Bundle profile + leads entry into a compact base64 code
+  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  const myLead = leads.find(l=>l.phone===prof.phone) || null;
+  const bundle = { prof, lead: myLead, exportedAt: Date.now() };
+  const code = btoa(unescape(encodeURIComponent(JSON.stringify(bundle))));
+
+  // Show modal with copy button
+  document.getElementById('prof-sync-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'prof-sync-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.7);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.3);margin:auto">
+      <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300;margin-bottom:6px">📲 Sync to Another Device</div>
+      <div style="font-size:.73rem;color:var(--muted);margin-bottom:18px;line-height:1.7">Copy this sync code. On your other device, go to Profile → Sync to Device → paste the code to import your profile.</div>
+      <textarea id="sync-code-box" readonly style="width:100%;height:100px;font-family:monospace;font-size:.65rem;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--ink);resize:none;word-break:break-all;">${code}</textarea>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn" style="flex:1;background:var(--ink)" onclick="
+          navigator.clipboard.writeText(document.getElementById('sync-code-box').value)
+            .then(()=>toast('✅ Sync code copied!'))
+            .catch(()=>{ document.getElementById('sync-code-box').select(); document.execCommand('copy'); toast('✅ Copied!'); })
+        ">📋 Copy Code</button>
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('prof-sync-modal').remove();profImportCode()">📥 Import a Code Instead</button>
+        <button class="btn-ghost" onclick="document.getElementById('prof-sync-modal').remove()" style="width:100%">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+}
+
+function profImportCode(){
+  document.getElementById('prof-sync-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'prof-sync-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.7);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.3);margin:auto">
+      <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300;margin-bottom:6px">📥 Import Profile</div>
+      <div style="font-size:.73rem;color:var(--muted);margin-bottom:18px;line-height:1.7">Paste the sync code from your other device below. This will overwrite the profile on this device.</div>
+      <textarea id="sync-import-box" placeholder="Paste sync code here…" style="width:100%;height:100px;font-family:monospace;font-size:.65rem;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--ink);resize:none;word-break:break-all;"></textarea>
+      <div id="sync-import-err" style="font-size:.72rem;color:var(--rust);margin-top:8px;display:none;padding:7px 10px;background:rgba(168,77,58,.06);border-radius:7px;"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('prof-sync-modal').remove()">Cancel</button>
+        <button class="btn" style="flex:1;background:#5E7260" onclick="profDoImport()">Import Profile →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+  setTimeout(()=>document.getElementById('sync-import-box')?.focus(), 200);
+}
+
+function profDoImport(){
+  const raw = document.getElementById('sync-import-box').value.trim();
+  const errEl = document.getElementById('sync-import-err');
+  if(!raw){ errEl.textContent='Please paste a sync code first'; errEl.style.display='block'; return; }
+  try{
+    const bundle = JSON.parse(decodeURIComponent(escape(atob(raw))));
+    if(!bundle.prof || !bundle.prof.phone){ errEl.textContent='Invalid sync code'; errEl.style.display='block'; return; }
+    const prof = bundle.prof;
+    const phone = prof.phone;
+    // Write profile to scoped key
+    localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
+    // Update leads
+    if(bundle.lead){
+      const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]').filter(l=>l.phone!==phone);
+      leads.push(bundle.lead);
+      localStorage.setItem('dm_leads', JSON.stringify(leads));
+    }
+    // Sign in as this user
+    localStorage.setItem('dm_user', JSON.stringify({name:prof.name||'', phone, status:'approved', mode:'full'}));
+    document.getElementById('prof-sync-modal').remove();
+    toast('✅ Profile imported! Signing you in…');
+    setTimeout(()=>{ profRefreshDisplay(prof); openProfile(); }, 600);
+  }catch(e){
+    errEl.textContent='Could not read sync code — make sure you copied the full code';
+    errEl.style.display='block';
+  }
 }
 
 async function saveProfile(){
