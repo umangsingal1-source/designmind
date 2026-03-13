@@ -1326,6 +1326,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 
 <!-- ═══ SCREEN: PROJECT DETAIL ═══ -->
 <div class="scr" id="s-pd">
+  <!-- Back button -->
+  <div style="margin-bottom:12px">
+    <button class="btn-ghost btn-sm" onclick="goHome()" style="font-size:.76rem">← Back to Projects</button>
+  </div>
   <!-- Hero -->
   <div class="pd-hero" id="pd-hero">
     <div class="pd-hero-left">
@@ -3960,7 +3964,20 @@ async function rhQuickStatus(imgId, status, e){
 }
 async function rhDiscard(imgId, e){
   e&&e.stopPropagation();
-  if(!confirm('Discard this image?')) return;
+  const m = document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML=`<div style="background:#FDFCFA;border-radius:14px;padding:22px 20px;max-width:300px;width:100%;text-align:center;box-shadow:0 16px 40px rgba(28,26,23,.2)">
+    <div style="font-size:1.8rem;margin-bottom:8px">🗑️</div>
+    <div style="font-size:.9rem;font-weight:500;margin-bottom:6px">Discard this image?</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:16px">It will be removed from the project.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" style="flex:1;font-size:.78rem" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn" style="flex:1;background:#A84D3A;font-size:.78rem" onclick="this.closest('div[style*=fixed]').remove();rhDoDiscard('${imgId}')">Discard</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+async function rhDoDiscard(imgId){
   await RH.updateImg(imgId,{status:'discarded'});
   refreshRH(); toast('Image discarded');
 }
@@ -5742,8 +5759,25 @@ function devBlockUser(){
 function devRemoveUser(){
   const phone = document.getElementById('dev-block-phone').value.trim();
   if(!/^\d{10}$/.test(phone)){ toast('Enter a valid 10-digit number'); return; }
-  if(!confirm('Remove ALL data for +91 '+phone+'? This cannot be undone.')){ return; }
+  // Use proper modal instead of confirm() which is blocked on mobile
+  const m = document.createElement('div');
+  m.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML=`<div style="background:#FDFCFA;border-radius:16px;padding:26px 22px;max-width:340px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(28,26,23,.25)">
+    <div style="font-size:2rem;margin-bottom:10px">🗑️</div>
+    <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:300;margin-bottom:8px">Remove +91 ${phone}?</div>
+    <div style="font-size:.74rem;color:var(--muted);line-height:1.6;margin-bottom:20px">All data for this number will be permanently deleted and the account blocked. This cannot be undone.</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn-ghost" style="flex:1" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn" style="flex:1;background:#A84D3A" onclick="
+        this.closest('div[style*=fixed]').remove();
+        devDoRemoveUser('${phone}');
+      ">Remove All →</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
 
+function devDoRemoveUser(phone){
   const pfx = 'dm_'+phone+'_';
   const toRemove = [];
   for(let i=0; i<localStorage.length; i++){
@@ -5751,15 +5785,10 @@ function devRemoveUser(){
     if(k && k.startsWith(pfx)) toRemove.push(k);
   }
   toRemove.forEach(k=>localStorage.removeItem(k));
-
-  // Remove from leads
   const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]').filter(l=>l.phone!==phone);
   localStorage.setItem('dm_leads', JSON.stringify(leads));
-
-  // Add to blocked list
   const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
   if(!blocked.includes(phone)){ blocked.push(phone); localStorage.setItem('dm_blocked', JSON.stringify(blocked)); }
-
   const msg = document.getElementById('dev-block-msg');
   if(msg){ msg.textContent='🗑 +91 '+phone+' — all data removed and blocked'; msg.style.display='block'; }
   document.getElementById('dev-block-phone').value='';
@@ -6387,7 +6416,35 @@ function webToggleFav(dataUrl, btn){
 function loadPortfolioPortal(token){
   const prof = PROFDB.get();
   if(prof.portfolioToken !== token){
-    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Outfit',sans-serif;text-align:center;padding:40px"><div><div style="font-size:3rem;margin-bottom:14px">🎨</div><div style="font-size:1.2rem;font-weight:300;margin-bottom:8px">Portfolio not found</div><div style="color:#8C8479;font-size:.83rem">This link may be invalid.</div></div></div>`;
+    // Check if this is a cross-device access (client opening on their own device)
+    const hasAnyData = !!localStorage.getItem('dm_user') || !!localStorage.getItem('dm_leads');
+    const isCrossDevice = !hasAnyData;
+    document.body.innerHTML=`
+      <div style="min-height:100vh;background:#F7F4EF;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;padding:32px">
+        <div style="max-width:480px;width:100%;text-align:center">
+          <div style="font-size:3.2rem;margin-bottom:18px">${isCrossDevice?'🎨':'🔍'}</div>
+          <div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:300;margin-bottom:10px;color:#1C1A17">
+            ${isCrossDevice?'Open on your designer\'s device':'Portfolio not found'}
+          </div>
+          ${isCrossDevice?`
+          <div style="font-size:.85rem;color:#8C8479;line-height:1.8;margin-bottom:24px">
+            This portfolio link works only on the <strong>same device and browser</strong> as your designer's DesignMind app — because portfolio data is stored locally on their device.<br><br>
+            Ask your designer to open this link on their phone or computer, or to share screenshots of their portfolio directly.
+          </div>
+          <div style="background:#FDFCFA;border:1px solid #E8E3DC;border-radius:14px;padding:20px 24px;margin-bottom:20px;text-align:left">
+            <div style="font-size:.73rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#B8884A;margin-bottom:10px">HOW TO SHARE PORTFOLIO</div>
+            <div style="font-size:.8rem;color:#5A5650;line-height:2">
+              1. Designer opens DesignMind on their device<br>
+              2. Goes to <strong>My Portfolio</strong> → taps <strong>Share Portfolio</strong><br>
+              3. Opens the link themselves and shows you the screen
+            </div>
+          </div>`:`
+          <div style="font-size:.85rem;color:#8C8479;line-height:1.8;margin-bottom:24px">
+            This link may have expired or the portfolio was removed. Ask your designer for a fresh link.
+          </div>`}
+          <a href="${location.origin+location.pathname}" style="display:inline-block;background:#B8884A;color:white;text-decoration:none;padding:11px 28px;border-radius:100px;font-size:.82rem;font-weight:500">← Back to DesignMind</a>
+        </div>
+      </div>`;
     return;
   }
   const data = PORTDB.get();
@@ -6686,17 +6743,6 @@ function pdGoVendors(){ openBOQ(); setTimeout(()=>{ document.getElementById('boq
 
 // ── Click project card → open detail ─────────────────────────────────────────
 // Override mkPC to open detail instead of toast
-function mkPC(p){
-  const d=document.createElement('div'); d.className='pc';
-  d.innerHTML=`<div class="pc-ban ${CB[p.type]||'b-flat'}"><span class="pc-ico">${p.icon}</span><span class="pc-type">${p.label}</span></div>
-  <div class="pc-body"><div class="pc-name">${p.name}</div><div class="pc-det">${p.loc} · ${p.bud}</div>
-  <div><div class="pc-pt"><span class="pc-ph">${p.phase}</span><span>${p.pct}%</span></div>
-  <div class="ptr"><div class="ptf ${CF[p.color]||'pf-gold'}" style="width:${p.pct}%"></div></div></div>
-  <div class="pc-foot"><span class="ppill ${CP[p.color]||'pp-gold'}">${(p.phase.split('·')[1]||'Active').trim()}</span><span class="carr">→</span></div></div>`;
-  d.onclick=()=>openProjDetail(p);
-  return d;
-}
-
 // ═══════════════════════════════ PROCUREMENT ══════════════════════════════════
 
 let _procEditId = null;
