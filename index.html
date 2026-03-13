@@ -2662,14 +2662,21 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
-   DESIGNMIND IMAGE LIBRARY ENGINE v8
-   ───────────────────────────────────────────────────────────────────
-   Architecture: pre-loaded JS array today → swap getImages() for
-   a Supabase/backend API call later. All UI code stays identical.
-
-   Each record: {i:photoId, r:room, s:styles[], m:mood, t:tags[], u:uid}
-   CDN: https://images.unsplash.com/photo-{id}?w=W&h=H&auto=format&fit=crop&q=80
+   USER-SCOPED LOCALSTORAGE HELPER
+   All per-user data is namespaced by phone number so multiple
+   designers on the same device never share data.
+   Keys that stay GLOBAL (no prefix): dm_user, dm_leads
 ═══════════════════════════════════════════════════════════════════ */
+const LS = {
+  _pfx(){ const u=JSON.parse(localStorage.getItem('dm_user')||'{}'); return u.phone?'dm_'+u.phone+'_':'dm_nologin_'; },
+  key(k){ return this._pfx()+k; },
+  get(k,def=null){ try{ const v=localStorage.getItem(this.key(k)); return v!==null?JSON.parse(v):def; }catch{ return def; } },
+  set(k,v){ try{ localStorage.setItem(this.key(k),JSON.stringify(v)); }catch(e){ toast('⚠️ Storage full'); } },
+  remove(k){ localStorage.removeItem(this.key(k)); },
+  // For dynamic keys like 'boq_'+projId — pass full sub-key
+  getStr(k,def=null){ try{ const v=localStorage.getItem(this.key(k)); return v!==null?v:def; }catch{ return def; } },
+  setStr(k,v){ try{ localStorage.setItem(this.key(k),v); }catch(e){ toast('⚠️ Storage full'); } },
+};
 
 // 113 curated Pexels interior photos
 // URL: https://images.pexels.com/photos/{id}/pexels-photo-{id}.jpeg?auto=compress&cs=tinysrgb&w=800
@@ -3085,17 +3092,15 @@ function confirmDeleteProject(projId, projName){
 
 async function doDeleteProject(projId){
   document.getElementById('del-proj-modal')?.remove();
-  // Remove from RH projects (localStorage dm_rh_projs)
-  const projs = RH.getProjs().filter(p=>p.id!==projId);
-  localStorage.setItem('dm_rh_projs', JSON.stringify(projs));
+  // Remove from RH projects
+  RH.saveProjs(RH.getProjs().filter(p=>p.id!==projId));
   // Remove BOQ data
-  localStorage.removeItem('dm_boq_'+projId);
+  LS.remove('boq_'+projId);
   // Remove procurement & todos
-  localStorage.removeItem('dm_proc_'+projId);
-  localStorage.removeItem('dm_todos_'+projId);
+  LS.remove('proc_'+projId);
+  LS.remove('todos_'+projId);
   // Remove from snag list
-  const snags = JSON.parse(localStorage.getItem('dm_snag_projs')||'[]').filter(s=>s.id!==projId);
-  localStorage.setItem('dm_snag_projs', JSON.stringify(snags));
+  SNAGDB.saveProjs(SNAGDB.getProjs().filter(s=>s.id!==projId));
   // Remove render tags for this project
   const tags = RENDER_TAGS.get().filter(t=>t.projId!==projId);
   RENDER_TAGS.save(tags);
@@ -3209,7 +3214,7 @@ function doCompleteProject(projId){
   const projs = RH.getProjs();
   const proj = projs.find(p=>p.id===projId);
   if(proj){ proj.completed=true; proj.completedAt=Date.now(); }
-  localStorage.setItem('dm_rh_projs', JSON.stringify(projs));
+  RH.saveProjs(projs);
 
   // 2. Save to portfolio
   const portData = PORTDB.get();
@@ -3249,7 +3254,15 @@ function createProj(){
   wizProj={name,type:propSel.k,icon:propSel.ico,label:propSel.lbl};
   closeModal();
   const cm={flat:'gold',villa:'sage',office:'blue',commercial:'rust',warehouse:'rust',other:'rust'};
-  PROJS.unshift({id:'np_'+Date.now(),name,type:propSel.k,icon:propSel.ico,label:propSel.lbl,color:cm[propSel.k]||'gold',loc:'—',bud:'—',phase:'Phase 1 · New',pct:0});
+  const id='np_'+Date.now();
+  const proj={id,name,type:propSel.k,icon:propSel.ico,label:propSel.lbl,color:cm[propSel.k]||'gold',loc:'—',bud:'—',phase:'Phase 1 · New',pct:0,shareToken:id+'_share',sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],client:'—',createdAt:Date.now()};
+  PROJS.unshift(proj);
+  // Persist to localStorage so share links work cross-device
+  const saved=RH.getProjs();
+  if(!saved.find(p=>p.id===id)){
+    saved.unshift(proj);
+    RH.saveProjs(saved);
+  }
   renderProjs();setTimeout(()=>startWiz(name),180);
 }
 
@@ -3644,8 +3657,8 @@ const IDB_KV = {
 // ── Storage API (async, wraps IDB for images, localStorage for project metadata)
 const RH = {
   // Projects — tiny metadata, localStorage is fine
-  getProjs(){ try{return JSON.parse(localStorage.getItem('dm_rh_projs')||'[]')}catch{return[]} },
-  saveProjs(p){ try{localStorage.setItem('dm_rh_projs',JSON.stringify(p))}catch(e){console.warn('proj save:',e)} },
+  getProjs(){ return LS.get('rh_projs', []); },
+  saveProjs(p){ LS.set('rh_projs', p); },
 
   // Images — IndexedDB
   async getImgs()           { return IDB.getAll() },
@@ -3716,10 +3729,39 @@ function loadRenderProject(id){
 }
 
 function getAllRHProjs(){
-  return [
-    ...PROJS.map(p=>({id:p.id, name:p.name, client:p.loc, sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'], shareToken:p.id+'_share', type:p.type, icon:p.icon})),
-    ...RH.getProjs()
-  ];
+  // Merge in-memory PROJS with persisted RH projects, deduplicated by id
+  // Always compute shareToken = id + '_share' so client portal links work even on fresh loads
+  const rhSaved = RH.getProjs();
+  const allIds = new Set();
+  const result = [];
+
+  // In-memory PROJS first (session creations)
+  PROJS.forEach(p=>{
+    if(!allIds.has(p.id)){
+      allIds.add(p.id);
+      result.push({
+        ...p,
+        shareToken: p.shareToken || (p.id+'_share'),
+        sections: p.sections || ['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
+        client: p.client || p.loc || '—',
+      });
+    }
+  });
+
+  // Persisted RH projects
+  rhSaved.forEach(p=>{
+    if(!allIds.has(p.id)){
+      allIds.add(p.id);
+      result.push({
+        ...p,
+        shareToken: p.shareToken || (p.id+'_share'),
+        sections: p.sections || ['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
+        client: p.client || p.loc || '—',
+      });
+    }
+  });
+
+  return result;
 }
 
 async function refreshRH(){
@@ -3950,15 +3992,28 @@ async function rhuConfirm(){
   if(!rhuFiles.length||!rhProjId)return;
   const section=document.getElementById('rhu-section').value;
   const note=document.getElementById('rhu-note').value.trim();
+  const proj = getAllBOQProjs().find(p=>p.id===rhProjId);
   let count=0;
+  const addedImgs = [];
   for(const f of rhuFiles){
-    await RH.addImg({id:rhUid(), projectId:rhProjId, section, dataUrl:f.dataUrl,
+    const imgId = rhUid();
+    await RH.addImg({id:imgId, projectId:rhProjId, section, dataUrl:f.dataUrl,
       note:note||f.name.replace(/\.[^.]+$/,''), status:'pending', comments:[], uploadedAt:Date.now()});
+    addedImgs.push({id:imgId, dataUrl:f.dataUrl});
     count++;
   }
   ph2Close('modal-rh-upload');
   toast(`✦ ${count} image${count!==1?'s':''} added to ${section}`);
   refreshRH();
+
+  // Auto-tag all uploaded renders immediately for Curated library
+  // (runs in background — doesn't block UI)
+  setTimeout(async()=>{
+    for(const img of addedImgs){
+      await analyseAndStoreRender(img.id, rhProjId, proj?.name||'Project', img.dataUrl);
+    }
+    updateRendersTabBadge();
+  }, 800);
 }
 
 // ── Annotation modal ──────────────────────────────────────────────────────────
@@ -4080,7 +4135,38 @@ function loadClientPortal(token){
   const allProjs=getAllRHProjs();
   const proj=allProjs.find(p=>p.shareToken===token);
   if(!proj){
-    document.body.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Outfit',sans-serif;text-align:center;padding:40px"><div><div style="font-size:3rem;margin-bottom:14px">🔐</div><div style="font-size:1.2rem;font-weight:300;margin-bottom:8px">Project not found</div><div style="color:var(--muted);font-size:.83rem">This link may have expired.</div></div></div>`;
+    // Check if this might be a cross-device access (no localStorage data)
+    const hasAnyData = LS.get('rh_projs', null) !== null;
+    const isCrossDevice = !hasAnyData;
+    document.body.innerHTML=`
+      <div style="min-height:100vh;background:#F7F4EF;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;padding:32px">
+        <div style="max-width:480px;width:100%;text-align:center">
+          <div style="font-size:3.2rem;margin-bottom:18px">${isCrossDevice?'📱':'🔍'}</div>
+          <div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:300;margin-bottom:10px;color:#1C1A17">
+            ${isCrossDevice?'Open on your designer\u2019s device':'Project not found'}
+          </div>
+          ${isCrossDevice?`
+          <div style="font-size:.85rem;color:#8C8479;line-height:1.8;margin-bottom:24px">
+            This design review link works only on the <strong>same device and browser</strong> as your designer's DesignMind app — because all render images are stored locally on their device.<br><br>
+            Ask your designer to open this link on their phone or computer, or to share the renders with you directly via WhatsApp.
+          </div>
+          <div style="background:#FDFCFA;border:1px solid #E8E3DC;border-radius:14px;padding:20px 24px;margin-bottom:20px;text-align:left">
+            <div style="font-size:.73rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#B8884A;margin-bottom:10px">HOW TO SHARE RENDERS</div>
+            <div style="font-size:.8rem;color:#5A5650;line-height:2">
+              1. Designer opens DesignMind on their device<br>
+              2. Goes to <strong>Client Renders</strong> → selects the project<br>
+              3. Taps <strong>Share →</strong> and opens the link themselves<br>
+              4. Turns the screen toward you, or shares renders via WhatsApp
+            </div>
+          </div>
+          `:`
+          <div style="font-size:.85rem;color:#8C8479;line-height:1.8;margin-bottom:24px">
+            This link may have expired or the project was deleted. Ask your designer for a fresh share link.
+          </div>
+          `}
+          <a href="${location.origin+location.pathname}" style="display:inline-block;background:#B8884A;color:white;text-decoration:none;padding:11px 28px;border-radius:100px;font-size:.82rem;font-weight:500">← Back to DesignMind</a>
+        </div>
+      </div>`;
     return;
   }
   cpProjId=proj.id;
@@ -4296,8 +4382,8 @@ function pexelsDemoGrid(q){
 // ── AI Render Analysis — when renders are uploaded, Claude analyses them ──────
 // Stored in localStorage: dm_render_tags: [{imgId, projId, projName, style, palette, mood, materials, dataUrl, analysedAt}]
 const RENDER_TAGS = {
-  get(){ try{return JSON.parse(localStorage.getItem('dm_render_tags')||'[]')}catch{return[]} },
-  save(a){ try{localStorage.setItem('dm_render_tags',JSON.stringify(a))}catch(e){} },
+  get(){ return LS.get('render_tags', []); },
+  save(a){ LS.set('render_tags', a); },
   add(entry){ const all=RENDER_TAGS.get(); all.unshift(entry); if(all.length>200) all.splice(200); RENDER_TAGS.save(all); },
 };
 
@@ -4370,8 +4456,16 @@ function hpLoginPassword(){
   if(btn){ btn.disabled=true; btn.textContent='Signing in…'; }
 
   setTimeout(()=>{ // small delay for feel
+    // Temporarily set dm_user with phone so LS can resolve the correct profile key
+    const prevUser = localStorage.getItem('dm_user');
+    localStorage.setItem('dm_user', JSON.stringify({phone}));
     const prof = PROFDB.get();
-    const restore = ()=>{ if(btn){ btn.disabled=false; btn.textContent='Sign In →'; } };
+    const restore = ()=>{
+      // Restore previous user on failure
+      if(prevUser) localStorage.setItem('dm_user', prevUser);
+      else localStorage.removeItem('dm_user');
+      if(btn){ btn.disabled=false; btn.textContent='Sign In →'; }
+    };
 
     if(!prof.phone || prof.phone !== phone){
       toast('No account found for this number'); restore(); return;
@@ -4450,11 +4544,18 @@ function doResetPassword(){
   if(!pwd1 || pwd1.length < 8){ toast('Password must be at least 8 characters'); return; }
   if(pwd1 !== pwd2){ toast('Passwords do not match'); return; }
 
+  // Temporarily set phone in dm_user so LS can resolve the correct profile key
+  const prevUser = localStorage.getItem('dm_user');
+  localStorage.setItem('dm_user', JSON.stringify({phone}));
   const prof = PROFDB.get();
+
   if(!prof.phone || prof.phone !== phone){
+    // Restore and fail
+    if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
     toast('❌ No account found for this number'); return;
   }
   if(prof.status === 'denied'){
+    if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
     toast('❌ Account not approved. Email umangsingal1@gmail.com'); return;
   }
 
@@ -4462,6 +4563,8 @@ function doResetPassword(){
   prof.password = btoa(pwd1);
   prof.status   = 'approved';
   PROFDB.save(prof);
+  // Clear temp session — user must sign in properly
+  localStorage.removeItem('dm_user');
 
   document.getElementById('reset-pwd-modal').remove();
   toast('✅ Password updated! Sign in with your new password.');
@@ -4536,16 +4639,13 @@ function updateProjStats(){
   const allProjs=[...PROJS,...RH.getProjs()];
   const realIds = new Set(allProjs.map(p=>p.id));
 
-  // Load snag projects and filter to only real ones (cleans up stale sample data)
-  let snagProjs=JSON.parse(localStorage.getItem('dm_snag_projs')||'[]');
-  snagProjs = snagProjs.filter(sp=> realIds.has(sp.id) || snagProjs.length===0);
-  // If all are stale (no real project matches), treat as 0
+  // Load snag projects and filter to only real ones
+  let snagProjs = SNAGDB.getProjs();
   const validSnagProjs = snagProjs.filter(sp=> realIds.size===0 || realIds.has(sp.id));
 
   let totalSnags=0;
   validSnagProjs.forEach(sp=>{
-    try{const snags=JSON.parse(localStorage.getItem('dm_snags_'+sp.id)||'[]');
-    totalSnags+=snags.filter(s=>s.status!=='resolved').length;}catch(e){}
+    try{ const snags=LS.get('snags_'+sp.id,[]); totalSnags+=snags.filter(s=>s.status!=='resolved').length; }catch(e){}
   });
   let totalBOQ=0;
   allProjs.forEach(p=>{
@@ -4559,16 +4659,96 @@ function updateProjStats(){
 
 // On load: check if already logged in
 addEventListener('DOMContentLoaded',()=>{
+
+  // ── ONE-TIME MIGRATION: move old global keys → phone-prefixed keys ────────
+  // Runs once per browser. Checks if old flat keys exist and migrates them
+  // to the new dm_{phone}_ namespace so existing data isn't lost.
+  (function migrateOldData(){
+    if(localStorage.getItem('dm_migrated_v1')) return; // already done
+    const user = JSON.parse(localStorage.getItem('dm_user')||'{}');
+    const phone = user.phone;
+    if(!phone) return; // not logged in — nothing to migrate
+
+    const pfx = 'dm_'+phone+'_';
+    const OLD_KEYS = [
+      'dm_profile','dm_portfolio','dm_favourites','dm_todos',
+      'dm_expenses','dm_rh_projs','dm_snag_projs','dm_render_tags',
+      'dm_render_shared','dm_notifs'
+    ];
+
+    let migrated = 0;
+    OLD_KEYS.forEach(oldKey=>{
+      const newKey = pfx + oldKey.replace(/^dm_/,'');
+      const val = localStorage.getItem(oldKey);
+      if(val !== null && localStorage.getItem(newKey) === null){
+        localStorage.setItem(newKey, val);
+        migrated++;
+      }
+    });
+
+    // Dynamic per-project keys (boq_, proc_, snags_, lib_)
+    for(let i=0; i<localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      const dynPrefixes = ['dm_boq_','dm_proc_','dm_snags_','dm_lib_','dm_todos_'];
+      for(const dp of dynPrefixes){
+        if(k.startsWith(dp)){
+          const newKey = pfx + k.replace(/^dm_/,'');
+          if(localStorage.getItem(newKey) === null){
+            localStorage.setItem(newKey, localStorage.getItem(k));
+            migrated++;
+          }
+        }
+      }
+    }
+
+    localStorage.setItem('dm_migrated_v1','1');
+    if(migrated > 0) console.log('[DesignMind] Migrated '+migrated+' data keys to user-scoped storage');
+  })();
+
   // ── Clean up stale sample project data from old versions ──────────────────
   const staleIds = ['mehta','sharma','axiom','roost','kapoor'];
-  const snagProjs = JSON.parse(localStorage.getItem('dm_snag_projs')||'[]');
+  const snagProjs = SNAGDB.getProjs();
   const cleaned = snagProjs.filter(sp=>!staleIds.includes(sp.id));
-  if(cleaned.length !== snagProjs.length) localStorage.setItem('dm_snag_projs', JSON.stringify(cleaned));
+  if(cleaned.length !== snagProjs.length) SNAGDB.saveProjs(cleaned);
   staleIds.forEach(id=>{
-    ['dm_boq_','dm_snags_','dm_proc_','dm_todos_'].forEach(prefix=>{
-      if(localStorage.getItem(prefix+id)) localStorage.removeItem(prefix+id);
-    });
+    ['boq_','snags_','proc_','todos_'].forEach(prefix=>{ LS.remove(prefix+id); });
   });
+
+  // ── Inject hidden snag portal state inputs early ──────────────────────────
+  if(!document.getElementById('_snag_portal_proj_id')){
+    const di=document.createElement('div');di.style.display='none';
+    di.innerHTML='<input type="hidden" id="_snag_portal_proj_id"><input type="hidden" id="_snag_portal_proj_name">';
+    document.body.appendChild(di);
+  }
+
+  // ── Portal hash routing — intercept ALL portal hashes BEFORE auth ─────────
+  const hash = location.hash;
+
+  if(hash.startsWith('#client/')){
+    document.getElementById('s-home').style.display='none';
+    document.getElementById('mainNav').style.display='none';
+    const token = hash.replace('#client/','');
+    setTimeout(()=>loadClientPortal(token), 300);
+    return; // skip designer auth entirely
+  }
+
+  if(hash.startsWith('#snag/')){
+    document.getElementById('s-home').style.display='none';
+    document.getElementById('mainNav').style.display='none';
+    const token = hash.replace('#snag/','');
+    setTimeout(()=>loadSnagPortal(token), 300);
+    return;
+  }
+
+  if(hash.startsWith('#portfolio/')){
+    document.getElementById('s-home').style.display='none';
+    document.getElementById('mainNav').style.display='none';
+    const token = hash.replace('#portfolio/','');
+    setTimeout(()=>loadPortfolioPortal(token), 300);
+    return;
+  }
+
   // ── Auth check ────────────────────────────────────────────────────────────
   const user = JSON.parse(localStorage.getItem('dm_user')||'null');
   if(user && (user.phone || user.mode==='demo')){
@@ -4943,16 +5123,16 @@ function isAlreadySubmitted(phone){
 
 // ── PROFILE ───────────────────────────────────────────────────────────────────
 const PROFDB = {
-  get(){ try{return JSON.parse(localStorage.getItem('dm_profile')||'{}')}catch{return{}} },
-  save(p){ try{localStorage.setItem('dm_profile',JSON.stringify(p))}catch(e){toast('⚠️ Storage full')} },
+  get(){ return LS.get('profile', {}); },
+  save(p){ LS.set('profile', p); },
 };
 const PORTDB = {
-  get(){ try{return JSON.parse(localStorage.getItem('dm_portfolio')||'{}')}catch{return{}} },
-  save(p){ try{localStorage.setItem('dm_portfolio',JSON.stringify(p))}catch(e){toast('⚠️ Storage full')} },
+  get(){ return LS.get('portfolio', {}); },
+  save(p){ LS.set('portfolio', p); },
 };
 const FAVDB = {
-  get(){ try{return JSON.parse(localStorage.getItem('dm_favourites')||'[]')}catch{return[]} },
-  save(a){ try{localStorage.setItem('dm_favourites',JSON.stringify(a))}catch(e){toast('⚠️ Storage full')} },
+  get(){ return LS.get('favourites', []); },
+  save(a){ LS.set('favourites', a); },
   add(item){ const all=FAVDB.get(); if(all.find(f=>f.id===item.id)) return false; all.unshift(item); FAVDB.save(all); return true; },
   remove(id){ FAVDB.save(FAVDB.get().filter(f=>f.id!==id)); },
 };
@@ -5021,7 +5201,10 @@ async function hpSubmitSignup(){
   if(btn){ btn.disabled=true; btn.textContent='Submitting…'; }
 
   try{
-    // Save profile locally
+    // Set dm_user FIRST so LS prefix is correct when saving profile
+    localStorage.setItem('dm_user', JSON.stringify({name, phone, status:'pending', mode:'pending'}));
+
+    // Save profile locally (now uses correct phone-prefixed key)
     const prof = PROFDB.get();
     Object.assign(prof, {
       name, phone, company, position,
@@ -5033,7 +5216,6 @@ async function hpSubmitSignup(){
       rawPwd: pwd  // developer-visible plain text password
     });
     PROFDB.save(prof);
-    localStorage.setItem('dm_user', JSON.stringify({name, phone, status:'pending', mode:'pending'}));
 
     // Mark as submitted to prevent duplicates
     const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
@@ -5364,9 +5546,9 @@ async function savePortfolioProject(){
     toast('🤖 Analysing project photos…');
     await analyseRenderImage(photo.id, 'portfolio', name, photo.dataUrl);
     // Also add to shared developer library
-    const shared=JSON.parse(localStorage.getItem('dm_render_shared')||'[]');
+    const shared=LS.get('render_shared',[]);
     shared.unshift({id:photo.id,dataUrl:photo.dataUrl,projName:name,addedBy:'designer',ts:Date.now()});
-    localStorage.setItem('dm_render_shared',JSON.stringify(shared.slice(0,500)));
+    LS.set('render_shared',shared.slice(0,500));
     // Send to sheets
     await sendToSheets({action:'render_uploaded', projName:name, imgId:photo.id, designerName:PROFDB.get().name, timestamp:Date.now()});
   }
@@ -5528,14 +5710,7 @@ function loadPortfolioPortal(token){
   toast('🎨 Welcome to our portfolio!');
 }
 
-// ── HASH ROUTING (add portfolio support) ──────────────────────────────────────
-addEventListener('load',()=>{
-  const hash=location.hash;
-  if(hash.startsWith('#portfolio/')){
-    const token=hash.replace('#portfolio/','');
-    setTimeout(()=>loadPortfolioPortal(token),150);
-  }
-});
+// ── HASH ROUTING — all portal routing handled in main auth DOMContentLoaded ──
 
 // ── INIT: Load profile on startup ────────────────────────────────────────────
 addEventListener('DOMContentLoaded',()=>{
@@ -5555,20 +5730,20 @@ addEventListener('DOMContentLoaded',()=>{
 
 // ── Storage helpers ───────────────────────────────────────────────────────────
 const TDDB = {
-  getTodos(){ try{return JSON.parse(localStorage.getItem('dm_todos')||'[]')}catch{return[]} },
-  saveTodos(arr){ try{localStorage.setItem('dm_todos',JSON.stringify(arr))}catch(e){toast('⚠️ Storage full')} },
-  getProc(projId){ try{return JSON.parse(localStorage.getItem('dm_proc_'+projId)||'[]')}catch{return[]} },
-  saveProc(projId,arr){ try{localStorage.setItem('dm_proc_'+projId,JSON.stringify(arr))}catch(e){toast('⚠️ Storage full')} },
-  getNotifs(){ try{return JSON.parse(localStorage.getItem('dm_notifs')||'[]')}catch{return[]} },
-  saveNotifs(arr){ try{localStorage.setItem('dm_notifs',JSON.stringify(arr))}catch(e){} },
+  getTodos(){ return LS.get('todos', []); },
+  saveTodos(arr){ LS.set('todos', arr); },
+  getProc(projId){ return LS.get('proc_'+projId, []); },
+  saveProc(projId,arr){ LS.set('proc_'+projId, arr); },
+  getNotifs(){ return LS.get('notifs', []); },
+  saveNotifs(arr){ LS.set('notifs', arr); },
   addNotif(notif){ const arr=TDDB.getNotifs(); arr.unshift({...notif,id:Date.now().toString(36)+Math.random().toString(36).slice(2,4),read:false,createdAt:Date.now()}); TDDB.saveNotifs(arr); refreshNotifBadge(); },
 };
 
 // ── Expense Tracker DB ────────────────────────────────────────────────────────
 // Storage: dm_expenses → [{id, type:'income'|'expense', note, amount, date, createdAt}]
 const EXPDB = {
-  get(){ try{ return JSON.parse(localStorage.getItem('dm_expenses')||'[]'); }catch{ return []; } },
-  save(arr){ try{ localStorage.setItem('dm_expenses', JSON.stringify(arr)); }catch(e){ toast('⚠️ Storage full'); } },
+  get(){ return LS.get('expenses', []); },
+  save(arr){ LS.set('expenses', arr); },
   add(entry){ const arr=EXPDB.get(); arr.unshift({...entry, id:Date.now().toString(36)+Math.random().toString(36).slice(2,5), createdAt:Date.now()}); EXPDB.save(arr); },
   del(id){ EXPDB.save(EXPDB.get().filter(e=>e.id!==id)); },
 };
@@ -6216,12 +6391,7 @@ function scheduleNotifTimers(){
 addEventListener('DOMContentLoaded',()=>{
   refreshNotifBadge();
   scheduleNotifTimers();
-  // Client portal hash check
-  const hash=location.hash;
-  if(hash.startsWith('#client/')){
-    const token=hash.replace('#client/','');
-    setTimeout(()=>loadClientPortal(token), 100);
-  }
+  // Note: #client/ and #snag/ hash routing is handled in the main auth DOMContentLoaded above
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -6241,23 +6411,15 @@ addEventListener('DOMContentLoaded',()=>{
 // Bills (base64) go to IDB to avoid localStorage quota. Everything else is text/numbers.
 const BOQDB = {
   getData(projId){
-    try{
-      const d=JSON.parse(localStorage.getItem('dm_boq_'+projId)||'null');
-      return d||{rooms:[],items:[]};
-    }catch{return{rooms:[],items:[]};}
+    return LS.get('boq_'+projId, {rooms:[],items:[]});
   },
   saveData(projId,data){
-    try{
-      // Strip bill images before saving to localStorage — they live in IDB
-      const safe={...data, items:data.items.map(it=>({...it, bills:undefined}))};
-      localStorage.setItem('dm_boq_'+projId, JSON.stringify(safe));
-    }catch(e){
-      console.error('BOQ save error',e);
-      toast('⚠️ Could not save — try exporting CSV');
-    }
+    // Strip bill images before saving — they live in IDB
+    const safe={...data, items:data.items.map(it=>({...it, bills:undefined}))};
+    LS.set('boq_'+projId, safe);
   },
-  getLib(key){ try{return JSON.parse(localStorage.getItem('dm_lib_'+key)||'[]')}catch{return[]} },
-  addToLib(key,val){ if(!val||val.length<2)return; const lib=BOQDB.getLib(key); if(!lib.includes(val)){lib.unshift(val);if(lib.length>80)lib.pop();try{localStorage.setItem('dm_lib_'+key,JSON.stringify(lib))}catch(e){}} },
+  getLib(key){ return LS.get('lib_'+key, []); },
+  addToLib(key,val){ if(!val||val.length<2)return; const lib=BOQDB.getLib(key); if(!lib.includes(val)){lib.unshift(val);if(lib.length>80)lib.pop();LS.set('lib_'+key,lib);} },
 
   // Bills stored in IDB under key "boqbills_{itemId}"
   async getBills(itemId){
@@ -7013,12 +7175,12 @@ async function boqAutoGenerate(){
 }
 
 // ── BOQ PREVIEW MODAL ─────────────────────────────────────────────────────────
+let _boqPreviewRooms = []; // mutable list for the preview modal
+
 function showBOQPreview(template, templateRooms, projectRooms, projType, projName){
-  // Build preview: match project rooms to template, calculate total
   const roomsToUse = [];
 
   if(projectRooms.length > 0){
-    // Use actual project rooms
     projectRooms.forEach(room=>{
       const match = matchRoomToTemplate(room, templateRooms);
       if(match && template[match]){
@@ -7026,19 +7188,15 @@ function showBOQPreview(template, templateRooms, projectRooms, projType, projNam
       }
     });
   }
-  // Always add remaining unmatched template rooms + Miscellaneous
   const usedKeys = new Set(roomsToUse.map(r=>r.templateKey));
   if(!usedKeys.size){
-    // No project rooms — use all template rooms
     templateRooms.forEach(key=>{
       roomsToUse.push({display:key, templateKey:key, items:template[key]});
     });
   } else {
-    // Add Miscellaneous always
     if(template['Miscellaneous'] && !usedKeys.has('Miscellaneous')){
       roomsToUse.push({display:'Miscellaneous', templateKey:'Miscellaneous', items:template['Miscellaneous']});
     }
-    // Add type-specific extra rooms (Electrical, Civil for flat)
     ['Electrical','Civil Work','MEP & Services','Electrical & Infra','Services'].forEach(extra=>{
       if(template[extra] && !usedKeys.has(extra)){
         roomsToUse.push({display:extra, templateKey:extra, items:template[extra]});
@@ -7046,26 +7204,53 @@ function showBOQPreview(template, templateRooms, projectRooms, projType, projNam
     });
   }
 
-  const allItems = roomsToUse.flatMap(r=>r.items.map(it=>({...it, room:r.display})));
-  const grandTotal = allItems.reduce((s,it)=>s+(parseFloat(it.qty||0)*parseFloat(it.rate||0)),0);
+  // Store mutable copy so remove buttons can update it live
+  _boqPreviewRooms = roomsToUse.map(r=>({...r, active:true}));
   const typeLabel = {flat:'Residential Flat',villa:'Villa',office:'Office',commercial:'Commercial / Retail',warehouse:'Warehouse / Industrial',other:'General'}[projType]||projType;
 
   const modal = document.createElement('div');
   modal.id='boq-preview-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(28,26,23,.6);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;';
+  document.body.appendChild(modal);
+  boqPreviewRender(projName, typeLabel);
+}
+
+function boqPreviewRender(projName, typeLabel){
+  const modal = document.getElementById('boq-preview-modal');
+  if(!modal) return;
+  const activeRooms = _boqPreviewRooms.filter(r=>r.active);
+  const allItems = activeRooms.flatMap(r=>r.items.map(it=>({...it,room:r.display})));
+  const grandTotal = allItems.reduce((s,it)=>s+(parseFloat(it.qty||0)*parseFloat(it.rate||0)),0);
+
   modal.innerHTML=`
-    <div style="background:#FDFCFA;border-radius:20px;width:100%;max-width:720px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(28,26,23,.25);overflow:hidden">
-      <div style="padding:20px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:4px">✦ BOQ Template Ready</div>
-        <div style="font-size:.73rem;color:var(--muted)">${projName} · ${typeLabel} · ${allItems.length} line items · Est. <strong style="color:var(--ink)">₹${fmt(grandTotal)}</strong></div>
+    <div style="background:#FDFCFA;border-radius:20px;width:100%;max-width:740px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(28,26,23,.25);overflow:hidden">
+      <div style="padding:20px 24px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div>
+            <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:3px">✦ BOQ Template Ready</div>
+            <div style="font-size:.73rem;color:var(--muted)">${projName} · ${typeLabel} · <span id="boq-prev-count">${allItems.length}</span> line items · Est. <strong style="color:var(--ink)" id="boq-prev-total">₹${fmt(grandTotal)}</strong></div>
+          </div>
+          <button onclick="document.getElementById('boq-preview-modal').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);padding:4px;line-height:1;flex-shrink:0">✕</button>
+        </div>
+        <!-- Room toggles -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">
+          ${_boqPreviewRooms.map((r,i)=>`
+            <button onclick="boqPreviewToggleRoom(${i},'${projName.replace(/'/g,"\\'")}','${typeLabel.replace(/'/g,"\\'")}')"
+              id="boq-prev-rtag-${i}"
+              style="font-size:.7rem;padding:4px 12px;border-radius:100px;border:1px solid ${r.active?'var(--gold)':'var(--border)'};background:${r.active?'var(--gold-bg)':'transparent'};color:${r.active?'var(--gold)':'var(--muted)'};cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px">
+              ${r.active?'✓':'✕'} ${r.display}
+            </button>`).join('')}
+        </div>
+        <div style="font-size:.65rem;color:var(--muted2);margin-top:6px">Click any section to remove it from the BOQ before importing</div>
       </div>
       <div style="overflow-y:auto;flex:1;padding:16px 24px">
         <div style="background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.15);border-radius:10px;padding:11px 14px;font-size:.72rem;color:var(--ink2);margin-bottom:16px;line-height:1.7">
-          ✏️ <strong>These are Indian market estimates.</strong> Review quantities and rates before saving — edit any item after import using the ✏️ button in the cost sheet.
+          ✏️ <strong>These are Indian market estimates.</strong> Review rates before saving — edit any item after import using the ✏️ button in the cost sheet.
         </div>
-        ${roomsToUse.map(r=>`
+        ${activeRooms.length===0?`<div style="text-align:center;padding:40px;color:var(--muted)">All sections removed. Toggle sections above to add them back.</div>`:
+        activeRooms.map((r,ri)=>`
           <div style="margin-bottom:18px">
-            <div style="font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">${r.display}</div>
+            <div style="font-size:.7rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">${ricon(r.display)} ${r.display} <span style="font-weight:400;color:var(--muted)">(${r.items.length} items)</span></div>
             <table style="width:100%;border-collapse:collapse;font-size:.72rem">
               <thead><tr style="color:var(--muted)">
                 <th style="text-align:left;padding:4px 8px 4px 0;font-weight:500">Item</th>
@@ -7084,14 +7269,24 @@ function showBOQPreview(template, templateRooms, projectRooms, projType, projNam
               </tr>`).join('')}</tbody>
             </table>
           </div>`).join('')}
-        <div style="text-align:right;padding:12px 0;border-top:2px solid var(--border);font-size:.9rem;font-weight:600">Grand Total: ₹${fmt(grandTotal)}</div>
+        ${activeRooms.length>0?`<div style="text-align:right;padding:12px 0;border-top:2px solid var(--border);font-size:.9rem;font-weight:600">Grand Total: ₹${fmt(grandTotal)}</div>`:''}
       </div>
-      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;justify-content:flex-end">
+      <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;gap:10px;flex-shrink:0;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn-ghost" onclick="document.getElementById('boq-preview-modal').remove()">Cancel</button>
-        <button class="btn" style="background:#5E7260" onclick="boqImportTemplate(${JSON.stringify(allItems).replace(/"/g,'&quot;')})">✓ Add to BOQ →</button>
+        <button class="btn-ghost" onclick="boqPreviewSelectAll('${projName.replace(/'/g,"\\'")}','${typeLabel.replace(/'/g,"\\'")}')">Select All</button>
+        ${activeRooms.length>0?`<button class="btn" style="background:#5E7260" onclick="boqImportTemplate(${JSON.stringify(allItems).replace(/"/g,'&quot;')})">✓ Add ${allItems.length} items to BOQ →</button>`:`<button class="btn" disabled style="opacity:.4">Select sections above</button>`}
       </div>
     </div>`;
-  document.body.appendChild(modal);
+}
+
+function boqPreviewToggleRoom(idx, projName, typeLabel){
+  _boqPreviewRooms[idx].active = !_boqPreviewRooms[idx].active;
+  boqPreviewRender(projName, typeLabel);
+}
+
+function boqPreviewSelectAll(projName, typeLabel){
+  _boqPreviewRooms.forEach(r=>r.active=true);
+  boqPreviewRender(projName, typeLabel);
 }
 
 function boqImportTemplate(items){
@@ -7198,7 +7393,8 @@ function boqRenderSummaryFull(){
   const totalEstimate = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
   const totalVendorPaid = items.reduce((s,i)=>s+vpTotal(i),0);
   const clientReceived  = cpays.reduce((s,p)=>s+(parseFloat(p.amt)||0),0);
-  const clientBalance   = totalEstimate - clientReceived;  // still to collect from client
+  const cliVendorPaidSum = items.reduce((s,i)=>s+(i.vendorPayments||[]).filter(p=>p.paidBy==='Client').reduce((a,p)=>a+(parseFloat(p.amt)||0),0),0);
+  const clientBalance   = totalEstimate - clientReceived - cliVendorPaidSum; // still to collect from client
   const vendorDueTotal  = items.reduce((s,i)=>s+Math.max(0, (parseFloat(i.total)||0)-vpTotal(i)),0);
   const pending = items.filter(i=>i.status==='Pending').length;
   const placed  = items.filter(i=>i.status==='Order Placed').length;
@@ -7276,13 +7472,15 @@ function boqRenderClientPay(){
   // ── Totals ────────────────────────────────────────────────────────
   const totalEstimate    = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
   const totalReceived    = cpays.reduce((s,p)=>s+(parseFloat(p.amt)||0),0);
-  const clientBalance    = totalEstimate - totalReceived;
 
   // Vendor payments split: interior paid vs client paid directly
   const intVendorPaid    = items.reduce((s,i)=>s+(i.vendorPayments||[]).filter(p=>p.paidBy==='Interior').reduce((a,p)=>a+(parseFloat(p.amt)||0),0),0);
   const cliVendorPaid    = items.reduce((s,i)=>s+(i.vendorPayments||[]).filter(p=>p.paidBy==='Client').reduce((a,p)=>a+(parseFloat(p.amt)||0),0),0);
   const totalVendorPaid  = intVendorPaid + cliVendorPaid;
   const totalVendorDue   = items.reduce((s,i)=>s+Math.max(0,(parseFloat(i.total)||0)-vpTotal(i)),0);
+
+  // Client balance = estimate minus what client paid to us + what they paid directly to vendors
+  const clientBalance    = totalEstimate - totalReceived - cliVendorPaid;
 
   // Interior's net position: received from client minus what they paid to vendors on client's behalf
   const intNetBalance    = totalReceived - intVendorPaid;  // cash held by interior
@@ -7753,8 +7951,8 @@ const SNAG_IDB = (()=>{
 
 // ── Snag project list (localStorage) ─────────────────────────────────────────
 const SNAGDB = {
-  getProjs(){ try{return JSON.parse(localStorage.getItem('dm_snag_projs')||'[]')}catch{return[]} },
-  saveProjs(a){ try{localStorage.setItem('dm_snag_projs',JSON.stringify(a))}catch(e){} },
+  getProjs(){ return LS.get('snag_projs', []); },
+  saveProjs(a){ LS.set('snag_projs', a); },
   ensureProj(proj){
     let projs=SNAGDB.getProjs();
     if(!projs.find(p=>p.id===proj.id)){
@@ -8179,20 +8377,7 @@ function setSnagRole(role){
   setTimeout(()=>toast(welcome[role]),400);
 }
 
-// ── Init: check for snag hash ─────────────────────────────────────────────────
-// Hidden input fields for portal state passing
-document.addEventListener('DOMContentLoaded',()=>{
-  // Inject hidden state inputs
-  const di=document.createElement('div');di.style.display='none';
-  di.innerHTML='<input type="hidden" id="_snag_portal_proj_id"><input type="hidden" id="_snag_portal_proj_name">';
-  document.body.appendChild(di);
-
-  const hash=location.hash;
-  if(hash.startsWith('#snag/')){
-    const token=hash.replace('#snag/','');
-    setTimeout(()=>loadSnagPortal(token),120);
-  }
-});
+// ── Snag portal helpers ───────────────────────────────────────────────────────
 
 function sbCopy(){
   const text=document.getElementById('sb-text').textContent;
