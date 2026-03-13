@@ -4442,6 +4442,42 @@ window.addEventListener('resize',()=>{
 });
 
 // ── PASSWORD LOGIN ────────────────────────────────────────────────────────────
+// ── DATA MIGRATION HELPER ─────────────────────────────────────────────────────
+// Called on first successful login to move old global keys → phone-prefixed keys.
+// Safe to call multiple times — only copies if new key doesn't already exist.
+function migrateAllUserData(phone){
+  if(!phone) return;
+  const pfx = 'dm_'+phone+'_';
+  const FLAT_KEYS = [
+    'dm_profile','dm_portfolio','dm_favourites','dm_todos',
+    'dm_expenses','dm_rh_projs','dm_snag_projs','dm_render_tags',
+    'dm_render_shared','dm_notifs'
+  ];
+  FLAT_KEYS.forEach(oldKey=>{
+    const newKey = pfx + oldKey.replace(/^dm_/,'');
+    const val = localStorage.getItem(oldKey);
+    if(val !== null && localStorage.getItem(newKey) === null){
+      localStorage.setItem(newKey, val);
+    }
+  });
+  // Dynamic per-project keys
+  const dynPrefixes = ['dm_boq_','dm_proc_','dm_snags_','dm_lib_','dm_todos_'];
+  const allKeys = [];
+  for(let i=0; i<localStorage.length; i++) allKeys.push(localStorage.key(i));
+  allKeys.forEach(k=>{
+    if(!k) return;
+    for(const dp of dynPrefixes){
+      if(k.startsWith(dp)){
+        const newKey = pfx + k.replace(/^dm_/,'');
+        if(localStorage.getItem(newKey) === null){
+          localStorage.setItem(newKey, localStorage.getItem(k));
+        }
+      }
+    }
+  });
+  localStorage.setItem('dm_migrated_v1','1');
+}
+
 function hpLoginPassword(){
   const phone = document.getElementById('login-phone').value.trim();
   const pwd   = document.getElementById('login-pwd').value;
@@ -4459,9 +4495,15 @@ function hpLoginPassword(){
     // Temporarily set dm_user with phone so LS can resolve the correct profile key
     const prevUser = localStorage.getItem('dm_user');
     localStorage.setItem('dm_user', JSON.stringify({phone}));
-    const prof = PROFDB.get();
+    let prof = PROFDB.get();
+
+    // ── FALLBACK: check old global key (pre-migration) ────────────────────
+    // If new scoped key is empty, try the old flat 'dm_profile' key
+    if(!prof.phone){
+      try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; }
+    }
+
     const restore = ()=>{
-      // Restore previous user on failure
       if(prevUser) localStorage.setItem('dm_user', prevUser);
       else localStorage.removeItem('dm_user');
       if(btn){ btn.disabled=false; btn.textContent='Sign In →'; }
@@ -4474,10 +4516,10 @@ function hpLoginPassword(){
       toast('❌ Account denied. Email umangsingal1@gmail.com'); restore(); return;
     }
     if(!prof.password){
-      // First-time — set password and enter
       prof.password = btoa(pwd);
       prof.status = 'approved';
-      PROFDB.save(prof);
+      PROFDB.save(prof); // saves to new scoped key
+      migrateAllUserData(phone); // migrate everything else
       localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
       profRefreshDisplay();
       toast('✦ Welcome, '+(prof.name||'Designer').split(' ')[0]+'!');
@@ -4490,7 +4532,8 @@ function hpLoginPassword(){
       restore(); return;
     }
     prof.status = 'approved';
-    PROFDB.save(prof);
+    PROFDB.save(prof); // ensure saved under scoped key
+    migrateAllUserData(phone); // migrate all other keys if not done yet
     localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:'approved',mode:'full'}));
     profRefreshDisplay();
     if(btn){ btn.textContent='✓ Welcome back!'; }
@@ -4547,10 +4590,14 @@ function doResetPassword(){
   // Temporarily set phone in dm_user so LS can resolve the correct profile key
   const prevUser = localStorage.getItem('dm_user');
   localStorage.setItem('dm_user', JSON.stringify({phone}));
-  const prof = PROFDB.get();
+  let prof = PROFDB.get();
+
+  // Fallback: check old global key if new scoped key is empty
+  if(!prof.phone){
+    try{ prof = JSON.parse(localStorage.getItem('dm_profile')||'{}'); }catch{ prof={}; }
+  }
 
   if(!prof.phone || prof.phone !== phone){
-    // Restore and fail
     if(prevUser) localStorage.setItem('dm_user', prevUser); else localStorage.removeItem('dm_user');
     toast('❌ No account found for this number'); return;
   }
@@ -4562,7 +4609,8 @@ function doResetPassword(){
   // Save new password
   prof.password = btoa(pwd1);
   prof.status   = 'approved';
-  PROFDB.save(prof);
+  PROFDB.save(prof); // saves to phone-scoped key
+  migrateAllUserData(phone); // migrate all other old keys
   // Clear temp session — user must sign in properly
   localStorage.removeItem('dm_user');
 
@@ -4661,49 +4709,11 @@ function updateProjStats(){
 addEventListener('DOMContentLoaded',()=>{
 
   // ── ONE-TIME MIGRATION: move old global keys → phone-prefixed keys ────────
-  // Runs once per browser. Checks if old flat keys exist and migrates them
-  // to the new dm_{phone}_ namespace so existing data isn't lost.
-  (function migrateOldData(){
-    if(localStorage.getItem('dm_migrated_v1')) return; // already done
+  // If user is already logged in (e.g. page refresh), run migration immediately.
+  (function(){
+    if(localStorage.getItem('dm_migrated_v1')) return;
     const user = JSON.parse(localStorage.getItem('dm_user')||'{}');
-    const phone = user.phone;
-    if(!phone) return; // not logged in — nothing to migrate
-
-    const pfx = 'dm_'+phone+'_';
-    const OLD_KEYS = [
-      'dm_profile','dm_portfolio','dm_favourites','dm_todos',
-      'dm_expenses','dm_rh_projs','dm_snag_projs','dm_render_tags',
-      'dm_render_shared','dm_notifs'
-    ];
-
-    let migrated = 0;
-    OLD_KEYS.forEach(oldKey=>{
-      const newKey = pfx + oldKey.replace(/^dm_/,'');
-      const val = localStorage.getItem(oldKey);
-      if(val !== null && localStorage.getItem(newKey) === null){
-        localStorage.setItem(newKey, val);
-        migrated++;
-      }
-    });
-
-    // Dynamic per-project keys (boq_, proc_, snags_, lib_)
-    for(let i=0; i<localStorage.length; i++){
-      const k = localStorage.key(i);
-      if(!k) continue;
-      const dynPrefixes = ['dm_boq_','dm_proc_','dm_snags_','dm_lib_','dm_todos_'];
-      for(const dp of dynPrefixes){
-        if(k.startsWith(dp)){
-          const newKey = pfx + k.replace(/^dm_/,'');
-          if(localStorage.getItem(newKey) === null){
-            localStorage.setItem(newKey, localStorage.getItem(k));
-            migrated++;
-          }
-        }
-      }
-    }
-
-    localStorage.setItem('dm_migrated_v1','1');
-    if(migrated > 0) console.log('[DesignMind] Migrated '+migrated+' data keys to user-scoped storage');
+    if(user.phone) migrateAllUserData(user.phone);
   })();
 
   // ── Clean up stale sample project data from old versions ──────────────────
