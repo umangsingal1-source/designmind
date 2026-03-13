@@ -25,7 +25,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 #s-home.on{display:flex;flex-direction:column;}
 .hp-hero{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px;min-height:100%;position:relative;}
 .hp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(184,136,74,.12) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(94,114,96,.08) 0%,transparent 50%);pointer-events:none;}
-.hp-layout{display:flex;width:100%;max-width:860px;border-radius:20px;overflow:hidden;box-shadow:0 32px 100px rgba(0,0,0,.55);position:relative;z-index:1;}
+.hp-layout{display:flex;width:100%;max-width:860px;border-radius:20px;overflow:visible;box-shadow:0 32px 100px rgba(0,0,0,.55);position:relative;z-index:1;}
+.hp-right{flex:1;background:#FDFCFA;display:flex;flex-direction:column;min-width:0;border-radius:0 20px 20px 0;overflow:hidden;position:relative;}
 .hp-left{flex:0 0 320px;background:linear-gradient(160deg,#2E2B26 0%,#1C1A17 100%);padding:40px 36px;display:flex;flex-direction:column;justify-content:space-between;}
 .hp-left-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;}
 .hp-left-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0;}
@@ -36,7 +37,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .hp-features{display:flex;flex-direction:column;gap:9px;}
 .hp-feat{display:flex;align-items:center;gap:9px;font-size:.7rem;color:rgba(247,244,239,.5);}
 .hp-feat-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7;flex-shrink:0;}
-.hp-right{flex:1;background:#FDFCFA;display:flex;flex-direction:column;min-width:0;}
 .hp-tabs{display:flex;border-bottom:1px solid var(--border);}
 .hp-tab{flex:1;padding:14px 10px;font-size:.77rem;font-weight:500;text-align:center;cursor:pointer;color:var(--muted);transition:all .2s;background:transparent;border:none;font-family:'Outfit',sans-serif;letter-spacing:.3px;}
 .hp-tab.on{color:var(--ink);border-bottom:2px solid var(--gold);background:rgba(184,136,74,.03);}
@@ -71,7 +71,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 @media(max-width:700px){
   .hp-layout{flex-direction:column;border-radius:0;box-shadow:none;min-height:100vh;}
   .hp-left{display:none;}
-  .hp-right{min-height:100vh;}
+  .hp-right{min-height:100vh;border-radius:0;position:relative;overflow:hidden;}
   .hp-body{padding:18px 20px 14px;max-height:none;}
   .hp-footer{padding:8px 20px 14px;}
 }
@@ -681,8 +681,21 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .boq-cell-inp::placeholder{color:var(--muted2);}
 .boq-cell-sel{width:100%;background:transparent;border:none;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--ink);outline:none;cursor:pointer;}
 .boq-act-btns{display:flex;gap:4px;}
-tr:not(:hover) .boq-act-btns .boq-act-del{ opacity:.35; }
-tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
+/* Touch devices: always show action buttons (no hover) */
+@media(hover:none),(pointer:coarse){
+  tr:not(:hover) .boq-act-btns .boq-act-del{ opacity:1; }
+  .boq-act-btns .boq-act-del{ opacity:1!important; }
+  /* Larger tap targets for all action buttons */
+  .boq-act{ width:34px!important; height:34px!important; font-size:.85rem!important; }
+  .ord-pill{ padding:6px 12px!important; font-size:.7rem!important; }
+  /* Mobile modal full screen */
+  .ph2-modal{ max-width:100%; border-radius:20px 20px 0 0; position:fixed; bottom:0; left:0; right:0; max-height:92vh; }
+  .ph2-ovl{ align-items:flex-end; padding:0; }
+  /* Snag card action buttons */
+  .snag-act-btn{ min-height:40px!important; }
+  /* Render hub items */
+  .rh-item{ min-height:100px; }
+}
 .boq-act{width:24px;height:24px;border:none;border-radius:5px;cursor:pointer;font-size:.7rem;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .boq-act-del{background:rgba(168,77,58,.1);color:#A84D3A;}.boq-act-del:hover{background:#A84D3A;color:white;}
 .boq-act-bill{background:rgba(58,107,138,.1);color:#3A6B8A;}.boq-act-bill:hover{background:#3A6B8A;color:white;}
@@ -1821,7 +1834,7 @@ tr:hover .boq-act-btns .boq-act-del{ opacity:1; }
 <!-- ══ SCREEN: CLIENT PORTAL ══ -->
 <div class="scr" id="s-client">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px;gap:12px;flex-wrap:wrap">
-    <div><h1 class="s-title" id="cp-title">Design <em>Review</em></h1><p class="s-sub" id="cp-sub">Review renders and share your feedback</p></div>
+    <div><h1 class="s-title" id="cp-title-hd">Design <em>Review</em></h1><p class="s-sub" id="cp-sub-hd">Review renders and share your feedback</p></div>
     <button class="btn btn-sm" style="background:#5E7260" onclick="cpSubmitReview()">✓ Submit Review</button>
   </div>
   <div class="rh-secnav" id="cp-secnav"></div>
@@ -4255,8 +4268,8 @@ function loadClientPortal(token){
   document.getElementById('clientBanner').style.display='flex';
   document.getElementById('cb-proj-name').textContent=proj.name;
   document.getElementById('mainNav').style.display='none';
-  document.getElementById('cp-title').innerHTML=proj.name.split(' ').map((w,i)=>i===1?`<em style="color:#B8884A;font-style:italic">${w}</em>`:w).join(' ');
-  document.getElementById('cp-sub').textContent='Review renders and share your feedback';
+  document.getElementById('cp-title-hd').innerHTML=proj.name.split(' ').map((w,i)=>i===1?`<em style="color:#B8884A;font-style:italic">${w}</em>`:w).join(' ');
+  document.getElementById('cp-sub-hd').textContent='Review renders and share your feedback';
   showScr('s-client');
   renderClientPortal(proj);
   toast('👋 Welcome to your design review portal!');
@@ -5542,34 +5555,30 @@ async function hpSubmitSignup(){
 function showPendingScreen(name, phone, alreadySubmitted){
   // Remove any existing pending overlay
   document.getElementById('hp-pending-overlay')?.remove();
-  const rightPanel = document.querySelector('.hp-right');
-  if(!rightPanel) return;
-  // Overlay on top of .hp-right — does NOT destroy the login/signup panels underneath
+  // Use fixed position so it's not clipped by any parent overflow:hidden
   const overlay = document.createElement('div');
   overlay.id = 'hp-pending-overlay';
-  overlay.style.cssText = 'position:absolute;inset:0;background:#FDFCFA;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#FDFCFA;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;overflow-y:auto;';
   overlay.innerHTML = `
-    <div style="font-size:3rem;margin-bottom:18px">${alreadySubmitted?'✅':'📞'}</div>
-    <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">
-      ${alreadySubmitted ? 'Already submitted!' : 'You\'re on the list, '+name.split(' ')[0]+'!'}
-    </div>
-    <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px;max-width:280px">
-      ${alreadySubmitted
-        ? `We already have your request. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours.`
-        : `Our team will call you on<br><strong style="font-size:1rem;color:var(--ink)">+91 ${phone}</strong><br>within <strong>24 hours</strong> to verify and activate.`
-      }
-    </div>
-    <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.18);border-radius:10px;padding:12px 16px;font-size:.71rem;text-align:left;line-height:1.8;margin-bottom:20px;width:100%;max-width:300px">
-      📌 Keep your phone reachable on <strong>+91 ${phone}</strong><br>
-      🔐 Your password is saved — sign in once approved
-    </div>
-    <button class="btn-ghost" style="width:100%;max-width:300px;font-size:.76rem" onclick="document.getElementById('hp-pending-overlay')?.remove();hpTab('login')">← Back to Sign In</button>
-    <div style="margin-top:10px">
-      <button class="btn-ghost" style="font-size:.72rem;color:var(--muted)" onclick="hpSkip()">🎭 Continue as Demo</button>
+    <div style="max-width:360px;width:100%">
+      <div style="font-size:3rem;margin-bottom:18px">${alreadySubmitted?'✅':'📞'}</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">
+        ${alreadySubmitted ? 'Already submitted!' : 'You\'re on the list, '+name.split(' ')[0]+'!'}
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px">
+        ${alreadySubmitted
+          ? `We already have your request. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours.`
+          : `Our team will call you on<br><strong style="font-size:1rem;color:var(--ink)">+91 ${phone}</strong><br>within <strong>24 hours</strong> to verify and activate.`
+        }
+      </div>
+      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.18);border-radius:10px;padding:12px 16px;font-size:.71rem;text-align:left;line-height:1.8;margin-bottom:24px">
+        📌 Keep your phone reachable on <strong>+91 ${phone}</strong><br>
+        🔐 Your password is saved — sign in once approved
+      </div>
+      <button class="btn-ghost" style="width:100%;font-size:.76rem;margin-bottom:10px" onclick="document.getElementById('hp-pending-overlay')?.remove();hpTab('login')">← Back to Sign In</button>
+      <button class="btn-ghost" style="width:100%;font-size:.72rem;color:var(--muted)" onclick="document.getElementById('hp-pending-overlay')?.remove();hpSkip()">🎭 Continue as Demo</button>
     </div>`;
-  // .hp-right needs position:relative for the absolute overlay to work
-  rightPanel.style.position = 'relative';
-  rightPanel.appendChild(overlay);
+  document.body.appendChild(overlay);
 }
 
 // ── PROFILE OPEN / SAVE ───────────────────────────────────────────────────────
@@ -5935,7 +5944,8 @@ async function saveProfile(){
   const pwd2= document.getElementById('prof-pwd2').value;
   if(pwd){ if(pwd!==pwd2){toast('Passwords do not match');return;} if(pwd.length<8){toast('Password must be at least 8 characters');return;} prof.password=btoa(pwd); prof.rawPwd=pwd; }
   PROFDB.save(prof);
-  localStorage.setItem('dm_user', JSON.stringify({name:prof.name,phone:prof.phone,status:prof.status}));
+  const curUser = JSON.parse(localStorage.getItem('dm_user')||'{}');
+  localStorage.setItem('dm_user', JSON.stringify({name:prof.name, phone:prof.phone, status:'approved', mode: curUser.mode||'full'}));
   profRefreshDisplay(prof);
   await sendToSheets({action:'profile_update', ...prof, avatarDataUrl:'[image]', timestamp:Date.now()});
   toast('✦ Profile saved');
