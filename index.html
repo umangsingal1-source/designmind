@@ -4753,7 +4753,7 @@ function doResetPassword(){
   if(!pwd1 || pwd1.length < 8){ toast('Password must be at least 8 characters'); return; }
   if(pwd1 !== pwd2){ toast('Passwords do not match'); return; }
 
-  // Find profile directly — scoped key first, then old global, then leads index
+  // Find profile — scoped key, old global key, leads index
   let prof = null;
   try{ const s=localStorage.getItem('dm_'+phone+'_profile'); if(s){ const p=JSON.parse(s); if(p&&p.phone===phone) prof=p; } }catch(e){}
   if(!prof){ try{ const o=localStorage.getItem('dm_profile'); if(o){ const p=JSON.parse(o); if(p&&p.phone===phone) prof=p; } }catch(e){} }
@@ -4761,26 +4761,32 @@ function doResetPassword(){
     try{
       const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
       const lead=leads.find(l=>l.phone===phone);
-      if(lead) prof={name:lead.name,phone:lead.phone,nameId:lead.nameId||'',status:'approved'};
+      if(lead) prof={name:lead.name,phone:lead.phone,nameId:lead.nameId||'',company:lead.company||'',position:lead.position||'',companyEmail:lead.companyEmail||'',insta:lead.insta||'',status:'approved',joinedAt:lead.ts||Date.now()};
     }catch(e){}
   }
-  if(!prof){ toast('❌ Something went wrong. Please try again.'); return; }
+  // ── Last resort: phone was already verified in Step 1 — create fresh profile ──
+  if(!prof){
+    prof = { name:'', phone, nameId:'', status:'approved', joinedAt:Date.now() };
+  }
 
   prof.password = btoa(pwd1);
   prof.rawPwd   = pwd1;
   prof.status   = 'approved';
-  // Write directly to scoped key
-  localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
-  // Run migration to move any other old keys
-  localStorage.setItem('dm_user', JSON.stringify({phone}));
-  migrateAllUserData(phone);
-  localStorage.removeItem('dm_user');
+  prof.phone    = phone;
 
-  document.getElementById('reset-pwd-modal').remove();
-  toast('✅ Password updated! Sign in with your new password.');
-  const loginPhone = document.getElementById('login-phone');
-  if(loginPhone) loginPhone.value = phone;
-  document.getElementById('login-pwd')?.focus();
+  // Write to scoped key and sign in directly
+  localStorage.setItem('dm_'+phone+'_profile', JSON.stringify(prof));
+  localStorage.setItem('dm_user', JSON.stringify({name:prof.name||'', phone, status:'approved', mode:'full'}));
+  migrateAllUserData(phone);
+
+  document.getElementById('reset-pwd-modal')?.remove();
+  toast('✅ Password set! Signing you in…');
+
+  // Sign in automatically — no need to retype
+  setTimeout(()=>{
+    profRefreshDisplay(prof);
+    hpEnterApp(false);
+  }, 600);
 }
 
 
