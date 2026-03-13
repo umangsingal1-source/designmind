@@ -4655,7 +4655,11 @@ function hpLoginPassword(){
     }
 
     if(!prof || !prof.phone){
-      toast('❌ No account found for +91 '+phone+'. Please Request Access first.'); resetBtn(); return;
+      if(errEl){
+        errEl.innerHTML = '❌ No account found for +91 '+phone+'. <span style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="hpTab(\'signup\')">Request access →</span>';
+        errEl.classList.add('show');
+      }
+      resetBtn(); return;
     }
 
     // ── Password check ────────────────────────────────────────────────────
@@ -5432,8 +5436,21 @@ function bnSetActive(id){
 
 // ── DUPLICATE SIGNUP PREVENTION ───────────────────────────────────────────────
 function isAlreadySubmitted(phone){
-  const leads=JSON.parse(localStorage.getItem('dm_leads')||'[]');
-  return leads.some(l=>l.phone===phone);
+  const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
+  if(!leads.some(l=>l.phone===phone)) return false;
+  // Lead entry exists — but only block if the profile ALSO still exists
+  // If profile was deleted, the lead is stale — allow re-signup and clean it up
+  const hasProfile = !!(
+    localStorage.getItem('dm_'+phone+'_profile') ||
+    localStorage.getItem('dm_profile')
+  );
+  if(!hasProfile){
+    // Clean up stale lead entry so re-signup works cleanly
+    const cleaned = leads.filter(l=>l.phone!==phone);
+    localStorage.setItem('dm_leads', JSON.stringify(cleaned));
+    return false;
+  }
+  return true;
 }
 
 
