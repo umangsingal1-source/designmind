@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .hp-tabs{display:flex;border-bottom:1px solid var(--border);}
 .hp-tab{flex:1;padding:14px 10px;font-size:.77rem;font-weight:500;text-align:center;cursor:pointer;color:var(--muted);transition:all .2s;background:transparent;border:none;font-family:'Outfit',sans-serif;letter-spacing:.3px;}
 .hp-tab.on{color:var(--ink);border-bottom:2px solid var(--gold);background:rgba(184,136,74,.03);}
-.hp-body{padding:22px 26px 18px;flex:1;overflow-y:auto;max-height:calc(100vh - 120px);}
+.hp-body{padding:22px 26px 18px;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .hp-title{font-family:'Fraunces',serif;font-size:1.25rem;font-weight:300;margin-bottom:3px;color:var(--ink);}
 .hp-sub{font-size:.7rem;color:var(--muted);margin-bottom:18px;line-height:1.6;}
 .hp-section-label{font-size:.58rem;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;margin:14px 0 9px;padding-bottom:5px;border-bottom:1px solid var(--border);}
@@ -196,7 +196,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .btn-outline:hover{background:var(--gold);color:white;}
 
 /* MODAL */
-.ovl{position:fixed;inset:0;background:rgba(28,26,23,.52);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
+.ovl{position:fixed;inset:0;background:rgba(28,26,23,.52);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
 .ovl.open{opacity:1;pointer-events:all;}
 .modal{background:var(--white);border-radius:20px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(28,26,23,.2);transform:translateY(18px) scale(.97);transition:transform .32s cubic-bezier(.22,1,.36,1);overflow:hidden;}
 .ovl.open .modal{transform:none;}
@@ -439,7 +439,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .wf-r{display:flex;gap:9px;}
 
 /* LIGHTBOX */
-.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:300;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .28s;}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .28s;}
 .lb.open{opacity:1;pointer-events:all;}
 .lb img{max-width:90vw;max-height:86vh;border-radius:8px;object-fit:contain;}
 .lb-x{position:absolute;top:18px;right:22px;background:rgba(255,255,255,.1);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:background .2s;}
@@ -470,7 +470,19 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   #pg{grid-template-columns:1fr 1fr!important;}
   /* BOQ table scroll */
   .boq-tbl-wrap{overflow-x:auto;}
-  /* Modals full screen on mobile */
+  /* BOQ mobile: stack toolbar, bigger touch targets */
+  .boq-toolbar{flex-wrap:wrap;gap:8px;}
+  .boq-toolbar .btn,.boq-toolbar .btn-ghost{min-height:38px;padding:8px 14px;}
+  .boq-main-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .boq-mtab{padding:10px 14px;font-size:.75rem;}
+  .boq-act{width:32px!important;height:32px!important;font-size:.8rem!important;}
+  .boq-add-row{padding:14px!important;font-size:.8rem!important;}
+  /* Summary cards: 2 per row on mobile */
+  .boq-summary{grid-template-columns:repeat(2,1fr)!important;}
+  /* BOQ select full width */
+  #boq-proj-sel{width:100%!important;min-width:unset!important;}
+  #s-boq>.page,.s-boq .page{padding-top:16px;}
+
   .ph2-modal{max-width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;}
   .ph2-ovl{align-items:flex-end;padding:0;}
   /* snag */
@@ -487,8 +499,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   .prop-grid{grid-template-columns:repeat(2,1fr);}
   .rf-grid,.rf-2{grid-template-columns:1fr;}
   .s-title{font-size:1.5rem;}
-  .scr.on{padding-bottom:72px!important;}
-  .page{padding-bottom:80px!important;}
+  .scr.on{padding-bottom:90px!important;}
+  .page{padding-bottom:100px!important;}
   .fav-grid{grid-template-columns:repeat(2,1fr);}
   .port-proj-grid{grid-template-columns:1fr!important;}
   .lib-source-tabs{overflow-x:auto;padding-bottom:4px;flex-wrap:nowrap;}
@@ -500,7 +512,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 /* ── BOTTOM NAV BAR (mobile only) ── */
 .bottom-nav{
   display:none;
-  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  position:fixed;bottom:0;left:0;right:0;z-index:400;
   background:rgba(247,244,239,.97);backdrop-filter:blur(20px);
   border-top:1px solid var(--border);
   padding:8px 0 env(safe-area-inset-bottom,8px);
@@ -513,9 +525,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .bn-label{font-size:.55rem;color:var(--muted);font-weight:500;letter-spacing:.3px;transition:color .18s;}
 .bn-item.active .bn-label{color:var(--ink);}
 @media(max-width:900px){.bottom-nav{display:block;}}
+/* Hidden by default — shown via JS only when inside app */
+#bottomNav{display:none!important;}
 
 /* ═══════════════ PHASE 2: CLIENT RENDERS ═══════════════ */
-.ph2-ovl{position:fixed;inset:0;background:rgba(28,26,23,.55);backdrop-filter:blur(8px);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
+.ph2-ovl{position:fixed;inset:0;background:rgba(28,26,23,.55);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
 .ph2-ovl.open{opacity:1;pointer-events:all;}
 .ph2-modal{background:#FDFCFA;border-radius:20px;width:100%;max-width:520px;box-shadow:0 24px 80px rgba(28,26,23,.2);transform:translateY(18px) scale(.97);transition:transform .32s cubic-bezier(.22,1,.36,1);overflow:hidden;max-height:90vh;overflow-y:auto;}
 .ph2-ovl.open .ph2-modal{transform:none;}
@@ -650,7 +664,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .boq-rtab .rtc{background:var(--bg2);color:var(--muted);padding:1px 6px;border-radius:100px;font-size:.6rem;}
 .boq-rtab.on .rtc{background:var(--gold);color:white;}
 /* Cost sheet table */
-.boq-sheet{background:#FDFCFA;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 16px rgba(28,26,23,.06);margin-top:0;}
+.boq-sheet{background:#FDFCFA;border:1px solid var(--border);border-radius:14px;overflow:visible;box-shadow:0 2px 16px rgba(28,26,23,.06);margin-top:0;}
+.boq-tbl-scroll{overflow-x:auto;border-radius:14px;}
 .boq-table{width:100%;border-collapse:collapse;font-size:.78rem;}
 .boq-table th{background:var(--ink2);color:rgba(255,255,255,.85);padding:10px 12px;text-align:left;font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap;}
 .boq-table th:first-child{border-radius:0;}
@@ -4456,10 +4471,14 @@ const RENDER_TAGS = {
 
 // ── Homepage Auth ─────────────────────────────────────────────────────────────
 function hpTab(tab){
-  document.getElementById('hp-login').style.display=tab==='login'?'block':'none';
-  document.getElementById('hp-signup').style.display=tab==='signup'?'block':'none';
-  document.getElementById('hp-tab-login').classList.toggle('on',tab==='login');
-  document.getElementById('hp-tab-signup').classList.toggle('on',tab==='signup');
+  // Dismiss pending overlay if present so the forms are accessible again
+  document.getElementById('hp-pending-overlay')?.remove();
+  const loginEl  = document.getElementById('hp-login');
+  const signupEl = document.getElementById('hp-signup');
+  if(loginEl)  loginEl.style.display  = tab==='login'  ? 'block' : 'none';
+  if(signupEl) signupEl.style.display = tab==='signup' ? 'block' : 'none';
+  document.getElementById('hp-tab-login')?.classList.toggle('on',  tab==='login');
+  document.getElementById('hp-tab-signup')?.classList.toggle('on', tab==='signup');
   if(tab==='signup') setTimeout(()=>document.getElementById('su-name')?.focus(),80);
   if(tab==='login')  setTimeout(()=>document.getElementById('login-phone')?.focus(),80);
 }
@@ -4840,6 +4859,9 @@ function signUpFromDemo(){
   IS_DEMO = false;
   // Remove demo banner
   document.getElementById('demo-banner')?.remove();
+  // Hide bottom nav
+  const bnav = document.getElementById('bottomNav');
+  if(bnav) bnav.style.setProperty('display','none','important');
   // Show auth screen on signup tab
   const home = document.getElementById('s-home');
   home.style.display = 'flex';
@@ -4881,6 +4903,9 @@ function hpEnterApp(isDemo){
   IS_DEMO = !!isDemo;
   const home=document.getElementById('s-home');
   home.style.opacity='0'; home.style.transition='opacity .4s';
+  // Show bottom nav on mobile
+  const bnav = document.getElementById('bottomNav');
+  if(bnav) bnav.style.removeProperty('display');
   setTimeout(()=>{
     home.classList.remove('on');
     home.style.display='none';
@@ -4970,9 +4995,28 @@ addEventListener('DOMContentLoaded',()=>{
 
   // ── Auth check ────────────────────────────────────────────────────────────
   const user = JSON.parse(localStorage.getItem('dm_user')||'null');
+  // Pending users: show sign-in tab with phone pre-filled + info banner, but DON'T block login
+  if(user && user.status==='pending' && user.mode==='pending'){
+    const loginPhone = document.getElementById('login-phone');
+    if(loginPhone && user.phone) loginPhone.value = user.phone;
+    hpTab('login');
+    document.getElementById('hp-already-banner')?.remove();
+    const loginPanel = document.getElementById('hp-login');
+    if(loginPanel){
+      const banner = document.createElement('div');
+      banner.id = 'hp-already-banner';
+      banner.style.cssText = 'background:rgba(184,136,74,.06);border:1px solid rgba(184,136,74,.2);border-radius:9px;padding:10px 13px;font-size:.71rem;color:var(--ink2);line-height:1.7;margin-bottom:14px;';
+      banner.innerHTML = `✅ Request submitted! Enter your phone + password to sign in once approved — or sign in now to check.`;
+      loginPanel.insertBefore(banner, loginPanel.firstChild);
+    }
+    // Don't return — let login proceed normally if user wants to try
+  }
   if(user && (user.phone || user.mode==='demo')){
     IS_DEMO = (user.mode==='demo');
     document.getElementById('s-home').style.display='none';
+    // Show bottom nav — user is already in app
+    const bnav = document.getElementById('bottomNav');
+    if(bnav) bnav.style.removeProperty('display');
     const prof=PROFDB.get();
     document.getElementById('navAv').textContent=IS_DEMO?'DU':(prof.name||user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'SA';
     if(IS_DEMO){
@@ -5417,18 +5461,20 @@ async function hpSubmitSignup(){
     if(errEl) errEl.style.display='none';
   }
 
-  // Check if number is already registered — redirect to login
+  // Check if number is already registered — redirect to login with credentials pre-filled
   if(isAlreadySubmitted(phone)){
     hpTab('login');
     const loginPhone = document.getElementById('login-phone');
+    const loginPwd   = document.getElementById('login-pwd');
     if(loginPhone) loginPhone.value = phone;
+    if(loginPwd && pwd) loginPwd.value = pwd; // pre-fill password too
     document.getElementById('hp-already-banner')?.remove();
     const loginPanel = document.getElementById('hp-login');
     if(loginPanel){
       const banner = document.createElement('div');
       banner.id = 'hp-already-banner';
       banner.style.cssText = 'background:rgba(94,114,96,.08);border:1px solid rgba(94,114,96,.25);border-radius:9px;padding:10px 13px;font-size:.71rem;color:var(--ink2);line-height:1.7;margin-bottom:14px;';
-      banner.innerHTML = `✅ <strong>+91 ${phone}</strong> is already registered. Please sign in with your password.`;
+      banner.innerHTML = `✅ <strong>+91 ${phone}</strong> is already registered — tap <strong>Sign In →</strong> below.`;
       loginPanel.insertBefore(banner, loginPanel.firstChild);
     }
     if(btn){ btn.disabled=false; btn.textContent='Submit for Approval →'; }
@@ -5494,29 +5540,36 @@ async function hpSubmitSignup(){
 }
 
 function showPendingScreen(name, phone, alreadySubmitted){
+  // Remove any existing pending overlay
+  document.getElementById('hp-pending-overlay')?.remove();
   const rightPanel = document.querySelector('.hp-right');
   if(!rightPanel) return;
-  rightPanel.innerHTML = `
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center">
-      <div style="font-size:3rem;margin-bottom:18px">${alreadySubmitted?'✅':'📞'}</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">
-        ${alreadySubmitted?'Already submitted!':'You\'re on the list, '+name.split(' ')[0]+'!'}
-      </div>
-      <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px;max-width:280px">
-        ${alreadySubmitted
-          ? `We already have your request. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours.`
-          : `Our team will call you on<br><strong style="font-size:1rem;color:var(--ink)">+91 ${phone}</strong><br>within <strong>24 hours</strong> to verify and activate.`
-        }
-      </div>
-      <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.18);border-radius:10px;padding:12px 16px;font-size:.71rem;text-align:left;line-height:1.8;margin-bottom:20px;width:100%;max-width:300px">
-        📌 Keep your phone reachable on <strong>+91 ${phone}</strong><br>
-        🔐 Your password is set — sign in once approved
-      </div>
-      <button class="btn-ghost" style="width:100%;max-width:300px;font-size:.76rem" onclick="hpTab('login')">← Back to Sign In</button>
-      <div style="margin-top:10px">
-        <button class="btn-ghost" style="font-size:.72rem;color:var(--muted)" onclick="hpSkip()">🎭 Continue as Demo</button>
-      </div>
+  // Overlay on top of .hp-right — does NOT destroy the login/signup panels underneath
+  const overlay = document.createElement('div');
+  overlay.id = 'hp-pending-overlay';
+  overlay.style.cssText = 'position:absolute;inset:0;background:#FDFCFA;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 28px;text-align:center;';
+  overlay.innerHTML = `
+    <div style="font-size:3rem;margin-bottom:18px">${alreadySubmitted?'✅':'📞'}</div>
+    <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">
+      ${alreadySubmitted ? 'Already submitted!' : 'You\'re on the list, '+name.split(' ')[0]+'!'}
+    </div>
+    <div style="font-size:.78rem;color:var(--muted);line-height:1.9;margin-bottom:20px;max-width:280px">
+      ${alreadySubmitted
+        ? `We already have your request. Our team will call you on <strong>+91 ${phone}</strong> within 24 hours.`
+        : `Our team will call you on<br><strong style="font-size:1rem;color:var(--ink)">+91 ${phone}</strong><br>within <strong>24 hours</strong> to verify and activate.`
+      }
+    </div>
+    <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.18);border-radius:10px;padding:12px 16px;font-size:.71rem;text-align:left;line-height:1.8;margin-bottom:20px;width:100%;max-width:300px">
+      📌 Keep your phone reachable on <strong>+91 ${phone}</strong><br>
+      🔐 Your password is saved — sign in once approved
+    </div>
+    <button class="btn-ghost" style="width:100%;max-width:300px;font-size:.76rem" onclick="document.getElementById('hp-pending-overlay')?.remove();hpTab('login')">← Back to Sign In</button>
+    <div style="margin-top:10px">
+      <button class="btn-ghost" style="font-size:.72rem;color:var(--muted)" onclick="hpSkip()">🎭 Continue as Demo</button>
     </div>`;
+  // .hp-right needs position:relative for the absolute overlay to work
+  rightPanel.style.position = 'relative';
+  rightPanel.appendChild(overlay);
 }
 
 // ── PROFILE OPEN / SAVE ───────────────────────────────────────────────────────
