@@ -26,7 +26,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .hp-hero{flex:1;display:flex;align-items:center;justify-content:center;padding:24px 16px;min-height:100%;position:relative;}
 .hp-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(184,136,74,.12) 0%,transparent 60%),radial-gradient(ellipse at 70% 80%,rgba(94,114,96,.08) 0%,transparent 50%);pointer-events:none;}
 .hp-layout{display:flex;width:100%;max-width:860px;border-radius:20px;overflow:visible;box-shadow:0 32px 100px rgba(0,0,0,.55);position:relative;z-index:1;}
-.hp-right{flex:1;background:#FDFCFA;display:flex;flex-direction:column;min-width:0;border-radius:0 20px 20px 0;overflow:hidden;position:relative;}
+.hp-right{flex:1;background:#FDFCFA;display:flex;flex-direction:column;min-width:0;border-radius:0 20px 20px 0;overflow:hidden;position:relative;max-height:88vh;}
 .hp-left{flex:0 0 320px;background:linear-gradient(160deg,#2E2B26 0%,#1C1A17 100%);padding:40px 36px;display:flex;flex-direction:column;justify-content:space-between;}
 .hp-left-logo{display:flex;align-items:center;gap:10px;margin-bottom:32px;}
 .hp-left-dot{width:9px;height:9px;border-radius:50%;background:var(--gold);flex-shrink:0;}
@@ -451,45 +451,51 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
 /* ═══ MOBILE UI ═══ */
+/* ── MEDIUM SCREENS (769–1000px): compact nav ── */
+@media(min-width:769px) and (max-width:1000px){
+  .nav{padding:0 20px;}
+  .nav-links{gap:2px;}
+  .nlink{font-size:.74rem;padding:5px 9px;}
+  .logo-tag{display:none;}
+}
+/* ── TABLET + LAPTOP (up to 900px): layout tweaks, keep desktop nav ── */
 @media(max-width:900px){
   .page{padding:20px 16px;}
   .nav{padding:0 16px;height:58px;}
-  .nav-links{display:none;} /* hidden — replaced by bottom nav */
   .api-banner{padding:10px 16px;}
   .bg2{grid-template-columns:1fr;}
   .rg{grid-template-columns:1fr 1fr;}
   .trio{grid-template-columns:1fr 1fr;}
   .rf-grid{grid-template-columns:1fr 1fr;}
   .bfr{grid-template-columns:1fr;}
-  .s-head{flex-direction:column;align-items:flex-start;gap:10px;}
-  .s-head>div:last-child{width:100%;display:flex;gap:8px;flex-wrap:wrap;}
-  .s-head>div:last-child .btn,.s-head>div:last-child .btn-ghost{flex:1;text-align:center;}
   .prof-grid{grid-template-columns:1fr;}
   .port-hero{padding:22px 18px;}
-  /* Project grid */
   #pg{grid-template-columns:1fr 1fr!important;}
-  /* BOQ table scroll */
   .boq-tbl-wrap{overflow-x:auto;}
-  /* BOQ mobile: stack toolbar, bigger touch targets */
   .boq-toolbar{flex-wrap:wrap;gap:8px;}
   .boq-toolbar .btn,.boq-toolbar .btn-ghost{min-height:38px;padding:8px 14px;}
   .boq-main-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .boq-mtab{padding:10px 14px;font-size:.75rem;}
-  .boq-act{width:32px!important;height:32px!important;font-size:.8rem!important;}
-  .boq-add-row{padding:14px!important;font-size:.8rem!important;}
-  /* Summary cards: 2 per row on mobile */
   .boq-summary{grid-template-columns:repeat(2,1fr)!important;}
-  /* BOQ select full width */
   #boq-proj-sel{width:100%!important;min-width:unset!important;}
   #s-boq>.page,.s-boq .page{padding-top:16px;}
+}
 
+/* ── PHONES (≤600px): hide desktop nav links, show bottom nav ── */
+@media(max-width:600px){
+  .nav-links{display:none!important;}
+  .s-head{flex-direction:column;align-items:flex-start;gap:10px;}
+  .s-head>div:last-child{width:100%;display:flex;gap:8px;flex-wrap:wrap;}
+  .s-head>div:last-child .btn,.s-head>div:last-child .btn-ghost{flex:1;text-align:center;}
+  .boq-act{width:32px!important;height:32px!important;font-size:.8rem!important;}
+  .boq-add-row{padding:14px!important;font-size:.8rem!important;}
   .ph2-modal{max-width:100%;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;right:0;max-height:92vh;}
   .ph2-ovl{align-items:flex-end;padding:0;}
-  /* snag */
   .snag-grid{grid-template-columns:1fr!important;}
 }
+
 @media(max-width:580px){
-  #renders-filters{ grid-template-columns:1fr 1fr!important; }
+  #renders-filters{grid-template-columns:1fr 1fr!important;}
   .logo-tag{display:none;}
   #pg{grid-template-columns:1fr!important;}
   .rg{grid-template-columns:1fr;}
@@ -509,8 +515,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   .s-head>div:last-child .btn,.s-head>div:last-child .btn-ghost{font-size:.72rem;padding:7px 12px;}
 }
 
-/* ── BOTTOM NAV BAR (mobile only) ── */
-.bottom-nav{
+/* ── BOTTOM NAV: always hidden until JS adds .visible, AND only on phones ── */
+#bottomNav{
   display:none;
   position:fixed;bottom:0;left:0;right:0;z-index:400;
   background:rgba(247,244,239,.97);backdrop-filter:blur(20px);
@@ -518,15 +524,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   padding:8px 0 env(safe-area-inset-bottom,8px);
   box-shadow:0 -4px 20px rgba(28,26,23,.08);
 }
-.bottom-nav-items{display:flex;justify-content:space-around;align-items:center;}
+/* Only show on phones — on tablet/laptop the top nav is used */
+@media(max-width:600px){
+  #bottomNav.visible{display:flex!important;flex-direction:column;}
+}
+.bottom-nav-items{display:flex;justify-content:space-around;align-items:center;width:100%;}
 .bn-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 8px;cursor:pointer;border-radius:10px;transition:all .18s;min-width:52px;border:none;background:none;font-family:'Outfit',sans-serif;}
 .bn-item.active .bn-icon{background:var(--ink);color:var(--bg);}
 .bn-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;transition:all .18s;background:transparent;}
 .bn-label{font-size:.55rem;color:var(--muted);font-weight:500;letter-spacing:.3px;transition:color .18s;}
 .bn-item.active .bn-label{color:var(--ink);}
-@media(max-width:900px){.bottom-nav{display:block;}}
-/* Hidden by default — shown via JS only when inside app */
-#bottomNav{display:none!important;}
 
 /* ═══════════════ PHASE 2: CLIENT RENDERS ═══════════════ */
 .ph2-ovl{position:fixed;inset:0;background:rgba(28,26,23,.55);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .28s;}
@@ -2938,6 +2945,8 @@ function getImages(roomName, styles=[], mood='', count=3, offset=0){
    IMAGE LIBRARY BROWSER
 ═══════════════════════════════════════════════════════════════════ */
 function openLibrary(){
+  const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
+  const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
   showScr('s-lib');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   // Safe selector — works even when nav-links are hidden on mobile
@@ -3343,6 +3352,11 @@ function showScr(id){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 function goHomeNav(){
+  // Always restore main nav and hide portal banners when returning home
+  const mn = document.getElementById('mainNav');
+  if(mn) mn.style.display='';
+  const cb = document.getElementById('clientBanner');
+  if(cb) cb.style.display='none';
   showScr('s-proj');renderProjs();
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.nlink')[0]?.classList.add('active');
@@ -4874,7 +4888,7 @@ function signUpFromDemo(){
   document.getElementById('demo-banner')?.remove();
   // Hide bottom nav
   const bnav = document.getElementById('bottomNav');
-  if(bnav) bnav.style.setProperty('display','none','important');
+  if(bnav) bnav.classList.remove('visible');
   // Show auth screen on signup tab
   const home = document.getElementById('s-home');
   home.style.display = 'flex';
@@ -4916,9 +4930,14 @@ function hpEnterApp(isDemo){
   IS_DEMO = !!isDemo;
   const home=document.getElementById('s-home');
   home.style.opacity='0'; home.style.transition='opacity .4s';
-  // Show bottom nav on mobile
+  // Always restore main nav
+  const mn = document.getElementById('mainNav');
+  if(mn) mn.style.display='';
+  const cb = document.getElementById('clientBanner');
+  if(cb) cb.style.display='none';
+  // Show bottom nav on mobile (CSS only shows it on ≤600px via the .visible class)
   const bnav = document.getElementById('bottomNav');
-  if(bnav) bnav.style.removeProperty('display');
+  if(bnav) bnav.classList.add('visible');
   setTimeout(()=>{
     home.classList.remove('on');
     home.style.display='none';
@@ -5027,9 +5046,14 @@ addEventListener('DOMContentLoaded',()=>{
   if(user && (user.phone || user.mode==='demo')){
     IS_DEMO = (user.mode==='demo');
     document.getElementById('s-home').style.display='none';
+    // Always restore main nav for logged-in users
+    const mn = document.getElementById('mainNav');
+    if(mn) mn.style.display='';
+    const cb = document.getElementById('clientBanner');
+    if(cb) cb.style.display='none';
     // Show bottom nav — user is already in app
     const bnav = document.getElementById('bottomNav');
-    if(bnav) bnav.style.removeProperty('display');
+    if(bnav) bnav.classList.add('visible');
     const prof=PROFDB.get();
     document.getElementById('navAv').textContent=IS_DEMO?'DU':(prof.name||user.name||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'SA';
     if(IS_DEMO){
@@ -5531,19 +5555,6 @@ async function hpSubmitSignup(){
       submittedAt: new Date().toLocaleString('en-IN')
     }).catch(()=>{});
 
-    // Email notification to developer
-    const subject = encodeURIComponent('DesignMind New Signup — '+name+' ('+company+')');
-    const body    = encodeURIComponent(
-      'New signup request:\n\nName: '+name+
-      '\nMobile: +91 '+phone+
-      '\nCompany: '+company+
-      '\nPosition: '+position+
-      '\nEmail: '+(compEmail||'—')+
-      '\nInstagram: '+(insta?'instagram.com/'+insta:'—')+
-      '\n\nOpen Google Sheet to Approve or Deny:\nhttps://docs.google.com/spreadsheets/d/1K3psEcTIzS682FwR2PL-WlB_7ZwubajzqZ2h73Vqo9A/edit'
-    );
-    try{ window.open('mailto:umangsingal1@gmail.com?subject='+subject+'&body='+body, '_blank'); }catch(e){}
-
     showPendingScreen(name, phone, false);
   } catch(e){
     if(btn){ btn.disabled=false; btn.textContent='Submit for Approval →'; }
@@ -5587,6 +5598,8 @@ const DEV_PHONE = '9836266894'; // Umang's number — admin panel shown only for
 
 function openProfile(){
   if(_demoCheck('Profile')) return;
+  const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
+  const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
   showScr('s-profile');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   const prof = PROFDB.get();
@@ -5956,6 +5969,8 @@ let _ppEditId = null;
 let _ppPhotos = [];
 
 function openPlugins(){
+  const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
+  const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
   showScr('s-plugins');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.nlink')[6]?.classList.add('active');
@@ -5966,6 +5981,8 @@ function openPortfolio(){
   if(_demoCheck('Portfolio')) return;
   const prof = PROFDB.get();
   if(!prof.name && !prof.company){ toast('Complete your profile first to set up your portfolio'); openProfile(); return; }
+  const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
+  const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
   showScr('s-portfolio');
   document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.nlink')[5]?.classList.add('active');
