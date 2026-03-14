@@ -1414,7 +1414,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       </div>
     </div>
     <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
-      <button onclick="openProjEdit()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;border-radius:100px;padding:5px 13px;font-size:.7rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">✏️ Edit</button>
+      <div style="display:flex;gap:7px">
+        <button onclick="openProjEdit()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;border-radius:100px;padding:5px 13px;font-size:.7rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">✏️ Edit</button>
+        <button onclick="pdDeleteProject()" style="background:rgba(168,77,58,.25);border:1px solid rgba(168,77,58,.4);color:white;border-radius:100px;padding:5px 13px;font-size:.7rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(168,77,58,.45)'" onmouseout="this.style.background='rgba(168,77,58,.25)'" title="Delete project">🗑 Delete</button>
+      </div>
       <div class="pd-hero-pct" id="pd-pct">0%</div>
       <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:2px;letter-spacing:1px;text-transform:uppercase">Complete</div>
     </div>
@@ -3424,6 +3427,8 @@ async function doDeleteProject(projId){
   }catch(e){}
   renderProjs();
   updateProjStats();
+  // If we were viewing this project's detail, go back to home
+  if(pdProjId === projId) goHome();
   toast('🗑️ Project deleted');
 }
 
@@ -8344,22 +8349,28 @@ function pdToggleRoomPlan(){
 }
 
 function pdRenderRoomPlan(proj){
-  const rooms = proj?.rooms || [];
+  const projRooms = proj?.rooms || [];
   const badge = document.getElementById('pd-room-plan-badge');
   const list  = document.getElementById('pd-room-plan-list');
   const card  = document.getElementById('pd-room-plan-card');
   if(!list) return;
 
-  if(badge) badge.textContent = rooms.length;
-
-  // Hide card if no rooms defined yet
-  if(!rooms.length){
-    if(card) card.style.display = 'none';
-    return;
+  // Fallback: if no wizard rooms, build simple list from sections
+  let roomsToRender = projRooms;
+  if(!projRooms.length){
+    const fullProj = RH.getProjs().find(p=>p.id===pdProjId);
+    const sections = fullProj?.sections||[];
+    if(!sections.length){
+      if(card) card.style.display='none';
+      return;
+    }
+    roomsToRender = sections.map(s=>({name:s,nickname:s,w:'',l:'',h:'',unit:'ft',ren:true,walls:[],notes:''}));
   }
-  if(card) card.style.display = '';
 
-  list.innerHTML = rooms.map((r, ri) => {
+  if(badge) badge.textContent = roomsToRender.length;
+  if(card) card.style.display='';
+
+  list.innerHTML = roomsToRender.map((r, ri) => {
     const unit    = r.unit || 'ft';
     const w       = parseFloat(r.w) || 0;
     const l       = parseFloat(r.l) || 0;
@@ -8531,6 +8542,12 @@ function saveProjEdit(){
 }
 
 // ── Project detail client contact helpers ────────────────────────────────────
+function pdDeleteProject(){
+  const proj = RH.getProjs().find(p=>p.id===pdProjId);
+  if(!proj) return;
+  confirmDeleteProject(pdProjId, proj.name);
+}
+
 function pdCallClient(){
   const proj = RH.getProjs().find(p=>p.id===pdProjId);
   if(proj?.clientPhone) window.location.href='tel:+91'+proj.clientPhone.replace(/\D/g,'');
