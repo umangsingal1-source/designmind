@@ -1454,6 +1454,20 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     </div>
 
   </div>
+
+  <!-- Room Plan — full width below the two columns -->
+  <div class="pd-card" style="margin-top:18px" id="pd-room-plan-card">
+    <div class="pd-sh" style="margin-bottom:0">
+      <div class="pd-sh-title">📐 Room Plan <span class="pd-sh-badge" id="pd-room-plan-badge">0</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost btn-sm" id="pd-room-plan-toggle" onclick="pdToggleRoomPlan()">Show →</button>
+      </div>
+    </div>
+    <div id="pd-room-plan-body" style="display:none;margin-top:14px">
+      <div id="pd-room-plan-list"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ═══ MODAL: NOTIFICATION PANEL (global) ═══ -->
@@ -1947,9 +1961,38 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 <!-- ══ MODAL: ADD IMAGES (Phase 2) ══ -->
 <div class="ph2-ovl" id="modal-rh-upload" onclick="ph2OvlClick(event,'modal-rh-upload')">
   <div class="ph2-modal">
-    <div class="ph2-mh"><div><div class="ph2-mt">Add Render Images</div><div class="ph2-ms">Upload renders — organised by section, unlimited images</div></div><button class="ph2-mx" onclick="ph2Close('modal-rh-upload')">✕</button></div>
+    <div class="ph2-mh"><div><div class="ph2-mt">Add Render Images</div><div class="ph2-ms">Upload renders — organised by room, unlimited images</div></div><button class="ph2-mx" onclick="ph2Close('modal-rh-upload')">✕</button></div>
     <div class="ph2-mb">
-      <div class="fg"><label class="fl">Default Section <span style="font-size:.62rem;color:var(--muted2);text-transform:none;letter-spacing:0">(applied to all — change per image below)</span></label><select class="bfs" id="rhu-section" style="width:100%" onchange="rhuUpdateAllSections(this.value)"></select></div>
+
+      <!-- Section selector + inline rename -->
+      <div class="fg" style="margin-bottom:14px">
+        <label class="fl">Room / Section</label>
+        <!-- Selector row -->
+        <div id="rhu-sec-select-row" style="display:flex;gap:8px;align-items:center">
+          <select class="bfs" id="rhu-section" style="flex:1" onchange="rhuUpdateAllSections(this.value);rhuShowSelectedRoom()"></select>
+          <button onclick="rhuStartRename()" title="Rename this room"
+            style="flex-shrink:0;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:7px 11px;cursor:pointer;font-size:.78rem;color:var(--muted);transition:all .18s"
+            onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+            onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✏️ Rename</button>
+        </div>
+        <!-- Inline rename row (hidden by default) -->
+        <div id="rhu-rename-row" style="display:none;margin-top:8px">
+          <div style="background:var(--gold-bg);border:1px solid rgba(184,136,74,.2);border-radius:10px;padding:10px 12px">
+            <div style="font-size:.68rem;color:var(--gold);font-weight:600;margin-bottom:7px;letter-spacing:.5px">RENAME THIS ROOM</div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input class="fi" id="rhu-rename-inp" placeholder="e.g. Yash's Room, Master Suite…"
+                style="flex:1;font-size:.82rem"
+                oninput="rhuRenameValidate()"
+                onkeydown="if(event.key==='Enter')rhuRenameConfirm();if(event.key==='Escape')rhuCancelRename()">
+              <button class="btn btn-sm" id="rhu-rename-ok" style="background:#B8884A;flex-shrink:0" onclick="rhuRenameConfirm()" disabled>Save</button>
+              <button class="btn-ghost btn-sm" onclick="rhuCancelRename()" style="flex-shrink:0">✕</button>
+            </div>
+            <div style="font-size:.62rem;color:var(--muted);margin-top:5px">This renames the room across the entire project — all existing renders in this section keep their assignment.</div>
+          </div>
+        </div>
+        <div id="rhu-rename-confirm-badge" style="display:none;font-size:.68rem;color:var(--sage);margin-top:5px"></div>
+      </div>
+
       <div class="fg"><label class="fl">Images</label>
         <div class="rh-uz" id="rhu-zone" ondragover="rhuDzO(event)" ondragleave="rhuDzL()" ondrop="rhuDzD(event)">
           <input type="file" id="rhu-files" accept="image/*" multiple onchange="rhuHandleFiles(this.files)">
@@ -3653,29 +3696,29 @@ function smartDetectRooms(b64){
 
 function bhkRooms(bhk){
   const base = [
-    {name:'Living Room',      nickname:'', w:'16', l:'20', unit:'ft', ren:true,  brief:{}},
-    {name:'Kitchen',          nickname:'', w:'9',  l:'11', unit:'ft', ren:true,  brief:{}},
-    {name:'Dining Area',      nickname:'', w:'10', l:'12', unit:'ft', ren:false, brief:{}},
-    {name:'Master Bathroom',  nickname:'', w:'6',  l:'8',  unit:'ft', ren:false, brief:{}},
-    {name:'Balcony',          nickname:'', w:'5',  l:'14', unit:'ft', ren:false, brief:{}},
+    {name:'Living Room',      nickname:'', w:'16', l:'20', unit:'ft', ren:true,  brief:{},walls:[],notes:''},
+    {name:'Kitchen',          nickname:'', w:'9',  l:'11', unit:'ft', ren:true,  brief:{},walls:[],notes:''},
+    {name:'Dining Area',      nickname:'', w:'10', l:'12', unit:'ft', ren:false, brief:{},walls:[],notes:''},
+    {name:'Master Bathroom',  nickname:'', w:'6',  l:'8',  unit:'ft', ren:false, brief:{},walls:[],notes:''},
+    {name:'Balcony',          nickname:'', w:'5',  l:'14', unit:'ft', ren:false, brief:{},walls:[],notes:''},
   ];
   const beds = [
-    {name:'Master Bedroom',   nickname:'', w:'14', l:'16', unit:'ft', ren:true,  brief:{}},
-    {name:'Bedroom 2',        nickname:'', w:'12', l:'13', unit:'ft', ren:false, brief:{}},
-    {name:'Bedroom 3',        nickname:'', w:'11', l:'12', unit:'ft', ren:false, brief:{}},
-    {name:'Bedroom 4',        nickname:'', w:'10', l:'11', unit:'ft', ren:false, brief:{}},
+    {name:'Master Bedroom',   nickname:'', w:'14', l:'16', unit:'ft', ren:true,  brief:{},walls:[],notes:''},
+    {name:'Bedroom 2',        nickname:'', w:'12', l:'13', unit:'ft', ren:false, brief:{},walls:[],notes:''},
+    {name:'Bedroom 3',        nickname:'', w:'11', l:'12', unit:'ft', ren:false, brief:{},walls:[],notes:''},
+    {name:'Bedroom 4',        nickname:'', w:'10', l:'11', unit:'ft', ren:false, brief:{},walls:[],notes:''},
   ];
   return [...base, ...beds.slice(0, Math.max(1, bhk))];
 }
 function loadDefaults(){rooms=defaultRooms();document.getElementById('analysisSpin').style.display='none';document.getElementById('roomsArea').style.display='block';renderRooms();}
 function defaultRooms(){return[
-  {name:'Living Room',nickname:'',w:'16',l:'20',unit:'ft',ren:true,brief:{}},
-  {name:'Master Bedroom',nickname:'',w:'14',l:'16',unit:'ft',ren:true,brief:{}},
-  {name:'Bedroom 2',nickname:'',w:'12',l:'13',unit:'ft',ren:false,brief:{}},
-  {name:'Kitchen',nickname:'',w:'9',l:'11',unit:'ft',ren:true,brief:{}},
-  {name:'Master Bathroom',nickname:'',w:'6',l:'8',unit:'ft',ren:false,brief:{}},
-  {name:'Dining Area',nickname:'',w:'10',l:'12',unit:'ft',ren:false,brief:{}},
-  {name:'Balcony',nickname:'',w:'5',l:'14',unit:'ft',ren:false,brief:{}},
+  {name:'Living Room',  nickname:'',w:'16',l:'20',h:'10',unit:'ft',ren:true, brief:{},walls:[],notes:''},
+  {name:'Master Bedroom',nickname:'',w:'14',l:'16',h:'10',unit:'ft',ren:true, brief:{},walls:[],notes:''},
+  {name:'Bedroom 2',    nickname:'',w:'12',l:'13',h:'10',unit:'ft',ren:false,brief:{},walls:[],notes:''},
+  {name:'Kitchen',      nickname:'',w:'9', l:'11',h:'10',unit:'ft',ren:true, brief:{},walls:[],notes:''},
+  {name:'Master Bathroom',nickname:'',w:'6',l:'8',h:'9', unit:'ft',ren:false,brief:{},walls:[],notes:''},
+  {name:'Dining Area',  nickname:'',w:'10',l:'12',h:'10',unit:'ft',ren:false,brief:{},walls:[],notes:''},
+  {name:'Balcony',      nickname:'',w:'5', l:'14',h:'9', unit:'ft',ren:false,brief:{},walls:[],notes:''},
 ];}
 
 /* Step 2 — Rooms */
@@ -3710,15 +3753,138 @@ function mkRC(r,i){
         onchange="rooms[${i}].nickname=this.value.trim();
           document.getElementById('rcdisplay${i}').textContent=this.value.trim()||rooms[${i}].name;">
     </div>
-    <div><label class="rlbl">Dimensions</label><div class="rdims"><input class="ri" value="${r.w||''}" placeholder="W" onchange="rooms[${i}].w=this.value"><span class="rx">×</span><input class="ri" value="${r.l||''}" placeholder="L" onchange="rooms[${i}].l=this.value"></div></div>
-    <div style="display:flex;align-items:center;gap:5px"><label class="rlbl" style="margin:0">Unit</label><select class="ri" style="width:64px" onchange="rooms[${i}].unit=this.value"><option ${r.unit==='ft'?'selected':''}>ft</option><option ${r.unit==='m'?'selected':''}>m</option></select></div>
+    <div>
+      <label class="rlbl">Floor Dimensions</label>
+      <div class="rdims">
+        <input class="ri" value="${r.w||''}" placeholder="Width" onchange="rooms[${i}].w=this.value;rcRecompute(${i})">
+        <span class="rx">×</span>
+        <input class="ri" value="${r.l||''}" placeholder="Length" onchange="rooms[${i}].l=this.value;rcRecompute(${i})">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px"><label class="rlbl" style="margin:0;white-space:nowrap">Height</label><input class="ri" style="width:70px" value="${r.h||''}" placeholder="H" onchange="rooms[${i}].h=this.value;rcRecompute(${i})"></div>
+      <div style="display:flex;align-items:center;gap:5px"><label class="rlbl" style="margin:0">Unit</label><select class="ri" style="width:64px" onchange="rooms[${i}].unit=this.value;rcRecompute(${i})"><option ${r.unit==='ft'?'selected':''}>ft</option><option ${r.unit==='m'?'selected':''}>m</option></select></div>
+    </div>
+    <div id="rc-areas-${i}" style="font-size:.64rem;color:var(--muted);line-height:1.8;background:var(--bg2);border-radius:7px;padding:5px 9px;display:${(r.w&&r.l)?'block':'none'}">
+      ${(r.w&&r.l)?`Floor: <strong>${(parseFloat(r.w)*parseFloat(r.l)).toFixed(1)} sq ${r.unit||'ft'}</strong>&nbsp;·&nbsp;Ceiling: <strong>${(parseFloat(r.w)*parseFloat(r.l)).toFixed(1)} sq ${r.unit||'ft'}</strong>${r.h?` &nbsp;·&nbsp; 4 Walls: <strong>${rcWallTotal(r)} sq ${r.unit||'ft'}</strong>`:''}`:''}
+    </div>
+  </div>
+  <!-- Wall plan section -->
+  <div class="rc-wall-toggle" onclick="rcToggleWalls(${i})" style="cursor:pointer;font-size:.67rem;font-weight:600;color:var(--gold);letter-spacing:.5px;padding:7px 0 4px;border-top:1px solid var(--border);margin-top:6px;display:flex;align-items:center;gap:5px;user-select:none">
+    <span id="rc-wall-arr-${i}" style="transition:transform .2s">▶</span> WALL PLAN
+    <span style="font-weight:400;color:var(--muted);font-size:.6rem;margin-left:4px">Click to add wall sizes, dado areas</span>
+  </div>
+  <div id="rc-walls-${i}" style="display:none">
+    ${['North Wall','South Wall','East Wall','West Wall'].map((wn,wi)=>`
+    <div style="background:var(--bg2);border-radius:9px;padding:9px 11px;margin-bottom:7px">
+      <div style="font-size:.65rem;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.8px">${wn}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><label class="rlbl" style="font-size:.58rem">Width</label><input class="ri" style="font-size:.75rem" value="${r.walls?.[wi]?.w||''}" placeholder="W" onchange="rcSetWall(${i},${wi},'w',this.value)"></div>
+        <div><label class="rlbl" style="font-size:.58rem">Height</label><input class="ri" style="font-size:.75rem" value="${r.walls?.[wi]?.h||r.h||''}" placeholder="H" onchange="rcSetWall(${i},${wi},'h',this.value)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <div><label class="rlbl" style="font-size:.58rem">Dado Height <span style="font-weight:400;color:var(--muted2)">(optional)</span></label><input class="ri" style="font-size:.75rem" value="${r.walls?.[wi]?.dadoH||''}" placeholder="e.g. 3" onchange="rcSetWall(${i},${wi},'dadoH',this.value)"></div>
+        <div><label class="rlbl" style="font-size:.58rem">Openings sqft <span style="font-weight:400;color:var(--muted2)">(door/window)</span></label><input class="ri" style="font-size:.75rem" value="${r.walls?.[wi]?.openings||''}" placeholder="e.g. 21" onchange="rcSetWall(${i},${wi},'openings',this.value)"></div>
+      </div>
+      <div id="rc-wall-area-${i}-${wi}" style="font-size:.63rem;color:var(--muted)"></div>
+    </div>`).join('')}
+    <div><label class="rlbl" style="font-size:.62rem">Notes for this room</label><input class="ri" style="font-size:.75rem" value="${r.notes||''}" placeholder="e.g. One wall has a false ceiling, bay window on south…" onchange="rooms[${i}].notes=this.value"></div>
   </div>
   <div class="rc-ft"><div class="rtog ${r.ren?'chk':''}" id="rtog${i}" onclick="togRen(${i})"><div class="rtbox">${r.ren?'✓':''}</div><span class="rtlbl">${r.ren?'Renovating':'Explore only'}</span></div></div>`;
   return d;
 }
 function togRen(i){rooms[i].ren=!rooms[i].ren;const c=document.getElementById('rc'+i);c.classList.toggle('ren',rooms[i].ren);c.classList.toggle('exp',!rooms[i].ren);const t=document.getElementById('rtog'+i);t.classList.toggle('chk',rooms[i].ren);t.querySelector('.rtbox').textContent=rooms[i].ren?'✓':'';t.querySelector('.rtlbl').textContent=rooms[i].ren?'Renovating':'Explore only';}
-function addRoom(){rooms.push({name:'New Room',nickname:'',w:'',l:'',unit:'ft',ren:true,brief:{}});renderRooms();}
+function addRoom(){rooms.push({name:'New Room',nickname:'',w:'',l:'',h:'',unit:'ft',ren:true,brief:{},walls:[],notes:''});renderRooms();}
 function rmRoom(i){rooms.splice(i,1);renderRooms();}
+
+// ── Wall plan helpers ─────────────────────────────────────────────────────────
+function rcWallTotal(r){
+  if(!r.w||!r.l||!r.h) return '—';
+  const w=parseFloat(r.w)||0, l=parseFloat(r.l)||0, h=parseFloat(r.h)||0;
+  return ((2*w*h)+(2*l*h)).toFixed(1);
+}
+
+function rcToggleWalls(i){
+  const panel = document.getElementById('rc-walls-'+i);
+  const arr   = document.getElementById('rc-wall-arr-'+i);
+  if(!panel) return;
+  const open = panel.style.display==='block';
+  panel.style.display = open?'none':'block';
+  if(arr) arr.style.transform = open?'':'rotate(90deg)';
+  if(!open) rcInitWallDefaults(i);
+}
+
+function rcInitWallDefaults(i){
+  // Pre-fill wall dimensions from room W/L/H if not already set
+  const r = rooms[i];
+  if(!r.walls) r.walls = [];
+  const wallSizes = [
+    {label:'North Wall', dim: parseFloat(r.l)||0},
+    {label:'South Wall', dim: parseFloat(r.l)||0},
+    {label:'East Wall',  dim: parseFloat(r.w)||0},
+    {label:'West Wall',  dim: parseFloat(r.w)||0},
+  ];
+  wallSizes.forEach((ws,wi)=>{
+    if(!r.walls[wi]) r.walls[wi] = {w:'',h:'',dadoH:'',openings:''};
+    // Auto-fill width from room dims if empty
+    if(!r.walls[wi].w && ws.dim) r.walls[wi].w = ws.dim.toString();
+    if(!r.walls[wi].h && r.h)    r.walls[wi].h = r.h;
+    // Sync inputs
+    const wInp = document.querySelector(`#rc-walls-${i} div:nth-child(${wi+1}) input:nth-child(1)`);
+    const hInp = document.querySelector(`#rc-walls-${i} div:nth-child(${wi+1}) input:nth-child(2)`);
+  });
+  rcUpdateWallAreas(i);
+}
+
+function rcSetWall(ri, wi, field, val){
+  if(!rooms[ri].walls) rooms[ri].walls=[];
+  if(!rooms[ri].walls[wi]) rooms[ri].walls[wi]={w:'',h:'',dadoH:'',openings:''};
+  rooms[ri].walls[wi][field]=val;
+  rcUpdateWallArea(ri, wi);
+}
+
+function rcUpdateWallArea(ri, wi){
+  const wall = rooms[ri].walls?.[wi];
+  if(!wall) return;
+  const w  = parseFloat(wall.w)||0;
+  const h  = parseFloat(wall.h)||0;
+  const dh = parseFloat(wall.dadoH)||0;
+  const op = parseFloat(wall.openings)||0;
+  const el = document.getElementById(`rc-wall-area-${ri}-${wi}`);
+  if(!el || !w || !h) return;
+  const gross    = (w*h).toFixed(1);
+  const net      = Math.max(0, w*h - op).toFixed(1);
+  const dadoArea = dh ? (w*dh).toFixed(1) : null;
+  const paintArea= Math.max(0, w*h - op - (dh?w*dh:0)).toFixed(1);
+  el.innerHTML = `
+    Gross: <strong>${gross}</strong> sq ${rooms[ri].unit||'ft'}
+    ${op?` · Net (excl. openings): <strong>${net}</strong>`:''}
+    ${dadoArea?` · Dado: <strong>${dadoArea}</strong> sq ${rooms[ri].unit||'ft'}`:''}
+    ${(op||dh)?` · Paint area: <strong>${paintArea}</strong>`:''}
+  `;
+}
+
+function rcUpdateWallAreas(i){
+  [0,1,2,3].forEach(wi=>rcUpdateWallArea(i,wi));
+}
+
+function rcRecompute(i){
+  const r = rooms[i];
+  const areaEl = document.getElementById('rc-areas-'+i);
+  if(!areaEl) return;
+  const w=parseFloat(r.w)||0, l=parseFloat(r.l)||0, h=parseFloat(r.h)||0;
+  const unit=r.unit||'ft';
+  if(w&&l){
+    const floor = (w*l).toFixed(1);
+    const wallT = h ? ((2*w*h)+(2*l*h)).toFixed(1) : null;
+    areaEl.style.display='block';
+    areaEl.innerHTML = `Floor: <strong>${floor} sq ${unit}</strong> &nbsp;·&nbsp; Ceiling: <strong>${floor} sq ${unit}</strong>${wallT?` &nbsp;·&nbsp; 4 Walls: <strong>${wallT} sq ${unit}</strong>`:''}`;
+  } else {
+    areaEl.style.display='none';
+  }
+  // Also update open wall panels
+  rcUpdateWallAreas(i);
+}
 
 /* Step 3 — Brief */
 function swBT(tab,btn){document.querySelectorAll('.btab').forEach(b=>b.classList.remove('on'));document.querySelectorAll('.bpan').forEach(p=>p.classList.remove('on'));btn.classList.add('on');document.getElementById(tab==='ov'?'bpov':'bprm').classList.add('on');}
@@ -3809,7 +3975,7 @@ async function showInspo(){
     const projIdx = allProjs.findIndex(p=>p.id===wizProj.id);
     if(projIdx>-1 && rooms.length){
       allProjs[projIdx].sections = rooms.map(r=>(r.nickname||r.name));
-      allProjs[projIdx].rooms = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
+      allProjs[projIdx].rooms = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,h:r.h||'',unit:r.unit,ren:r.ren,walls:r.walls||[],notes:r.notes||''}));
       RH.saveProjs(allProjs);
     }
   }catch(e){}
@@ -4007,7 +4173,10 @@ function saveFinish(){
     const projIdx  = allProjs.findIndex(p=>p.id===wizProj.id);
     if(projIdx>-1 && rooms.length){
       allProjs[projIdx].sections = rooms.map(r=>(r.nickname||r.name));
-      allProjs[projIdx].rooms    = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
+      allProjs[projIdx].rooms    = rooms.map(r=>({
+        name:r.name, nickname:r.nickname||'', w:r.w, l:r.l, h:r.h||'', unit:r.unit, ren:r.ren,
+        walls:r.walls||[], notes:r.notes||''
+      }));
       RH.saveProjs(allProjs);
     }
   }catch(e){ console.warn('Could not save rooms to project:', e); }
@@ -4581,6 +4750,83 @@ function rhuRemoveFile(idx){
 function rhuUpdateAllSections(sec){
   rhuFiles.forEach(f=>f.section=sec);
   document.querySelectorAll('#rhu-thumbs select').forEach(sel=>sel.value=sec);
+}
+
+function rhuShowSelectedRoom(){
+  // Reset rename state when section changes
+  rhuCancelRename();
+  document.getElementById('rhu-rename-confirm-badge').style.display='none';
+}
+
+function rhuStartRename(){
+  const sel = document.getElementById('rhu-section');
+  const current = sel?.value || '';
+  const inp = document.getElementById('rhu-rename-inp');
+  if(inp){ inp.value = current; }
+  document.getElementById('rhu-rename-row').style.display = 'block';
+  document.getElementById('rhu-rename-ok').disabled = true;
+  setTimeout(()=>inp?.select(), 80);
+}
+
+function rhuCancelRename(){
+  document.getElementById('rhu-rename-row').style.display = 'none';
+  const inp = document.getElementById('rhu-rename-inp');
+  if(inp) inp.value = '';
+}
+
+function rhuRenameValidate(){
+  const val = (document.getElementById('rhu-rename-inp')?.value||'').trim();
+  const btn = document.getElementById('rhu-rename-ok');
+  if(btn) btn.disabled = val.length < 2;
+}
+
+function rhuRenameConfirm(){
+  const sel      = document.getElementById('rhu-section');
+  const oldName  = sel?.value || '';
+  const newName  = (document.getElementById('rhu-rename-inp')?.value||'').trim();
+  if(!newName || newName.length < 2){ toast('Please enter a name'); return; }
+  if(newName === oldName){ rhuCancelRename(); return; }
+
+  // 1. Update project sections array (rename in-place, preserving order)
+  const projs = RH.getProjs();
+  const idx   = projs.findIndex(p=>p.id===rhProjId);
+  if(idx === -1){ toast('Project not found'); return; }
+
+  projs[idx].sections = projs[idx].sections.map(s => s === oldName ? newName : s);
+  // Also update rooms metadata if present
+  if(projs[idx].rooms){
+    projs[idx].rooms = projs[idx].rooms.map(r =>
+      (r.nickname===oldName || r.name===oldName)
+        ? {...r, nickname:newName, name:newName}
+        : r
+    );
+  }
+  RH.saveProjs(projs);
+
+  // 2. Re-build the dropdown with the new name selected
+  const proj = RH.getProjs().find(p=>p.id===rhProjId);
+  sel.innerHTML = (proj?.sections||[]).map(s =>
+    `<option value="${s}" ${s===newName?'selected':''}>${ricon(s)} ${s}</option>`
+  ).join('');
+  sel.value = newName;
+
+  // 3. Update any already-staged files that had the old section name
+  rhuFiles.forEach(f=>{ if(f.section===oldName) f.section=newName; });
+  document.querySelectorAll('#rhu-thumbs select').forEach(sel2=>{
+    if(sel2.value===oldName){
+      // Replace matching option text too
+      Array.from(sel2.options).forEach(opt=>{ if(opt.value===oldName){ opt.value=newName; opt.textContent=ricon(newName)+' '+newName; } });
+      sel2.value = newName;
+    }
+  });
+
+  // 4. Hide rename row, show confirmation badge
+  rhuCancelRename();
+  const badge = document.getElementById('rhu-rename-confirm-badge');
+  if(badge){ badge.style.display='block'; badge.textContent=`✓ Renamed "${oldName}" → "${newName}"`; }
+
+  // 5. Refresh the hub in background so section headers update immediately
+  setTimeout(()=>refreshRH(), 300);
 }
 
 async function rhuConfirm(){
@@ -8084,6 +8330,112 @@ function openProjDetail(proj){
   pdRenderNotifs();
   pdRenderProc();
   pdRenderTodos();
+  pdRenderRoomPlan(proj);
+}
+
+// ── Room Plan section ─────────────────────────────────────────────────────────
+function pdToggleRoomPlan(){
+  const body = document.getElementById('pd-room-plan-body');
+  const btn  = document.getElementById('pd-room-plan-toggle');
+  if(!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if(btn) btn.textContent = open ? 'Show →' : 'Hide ↑';
+}
+
+function pdRenderRoomPlan(proj){
+  const rooms = proj?.rooms || [];
+  const badge = document.getElementById('pd-room-plan-badge');
+  const list  = document.getElementById('pd-room-plan-list');
+  const card  = document.getElementById('pd-room-plan-card');
+  if(!list) return;
+
+  if(badge) badge.textContent = rooms.length;
+
+  // Hide card if no rooms defined yet
+  if(!rooms.length){
+    if(card) card.style.display = 'none';
+    return;
+  }
+  if(card) card.style.display = '';
+
+  list.innerHTML = rooms.map((r, ri) => {
+    const unit    = r.unit || 'ft';
+    const w       = parseFloat(r.w) || 0;
+    const l       = parseFloat(r.l) || 0;
+    const h       = parseFloat(r.h) || 0;
+    const floor   = w && l ? (w * l).toFixed(1) : null;
+    const ceiling = floor;
+    const wallTotal = w && l && h ? ((2*w*h) + (2*l*h)).toFixed(1) : null;
+
+    // Wall rows
+    const wallNames = ['North Wall','South Wall','East Wall','West Wall'];
+    const wallRows  = (r.walls || []).map((wall, wi) => {
+      if(!wall || (!wall.w && !wall.h)) return '';
+      const ww  = parseFloat(wall.w) || 0;
+      const wh  = parseFloat(wall.h) || 0;
+      const op  = parseFloat(wall.openings) || 0;
+      const dh  = parseFloat(wall.dadoH) || 0;
+      const gross = ww && wh ? (ww * wh).toFixed(1) : '—';
+      const net   = ww && wh ? Math.max(0, ww*wh - op).toFixed(1) : '—';
+      const dado  = ww && dh ? (ww * dh).toFixed(1) : null;
+      const paint = ww && wh ? Math.max(0, ww*wh - op - (ww*dh)).toFixed(1) : null;
+      return `
+        <tr style="border-top:1px solid var(--border)">
+          <td style="padding:6px 10px;font-size:.72rem;color:var(--muted);white-space:nowrap">${wallNames[wi]||'Wall '+(wi+1)}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right">${ww&&wh?`${ww}×${wh} ${unit}`:'—'}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right;font-weight:500">${gross !== '—' ? gross+' sq '+unit : '—'}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right;color:var(--muted)">${op ? '−'+op : '—'}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right;font-weight:500;color:var(--sage)">${net !== '—' ? net+' sq '+unit : '—'}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right;color:var(--blue)">${dado ? dado+' sq '+unit : '—'}</td>
+          <td style="padding:6px 10px;font-size:.72rem;text-align:right;color:var(--rust)">${paint && (op||dh) ? paint+' sq '+unit : '—'}</td>
+        </tr>`;
+    }).join('');
+
+    const hasWalls = (r.walls||[]).some(w=>w?.w||w?.h);
+
+    return `
+      <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px">
+        <!-- Room header -->
+        <div style="background:var(--bg2);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size:1.3rem">${ricon(r.name)}</span>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:.9rem">${r.nickname||r.name}</div>
+            ${r.nickname&&r.nickname!==r.name?`<div style="font-size:.66rem;color:var(--muted)">${r.name}</div>`:''}
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap">
+            ${w&&l?`<div style="text-align:center"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Floor</div><div style="font-size:.85rem;font-weight:600">${floor} sq ${unit}</div></div>`:''}
+            ${wallTotal?`<div style="text-align:center"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">4 Walls</div><div style="font-size:.85rem;font-weight:600">${wallTotal} sq ${unit}</div></div>`:''}
+            ${w&&l&&h?`<div style="text-align:center"><div style="font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Volume</div><div style="font-size:.85rem;font-weight:600">${(w*l*h).toFixed(1)} cu ${unit}</div></div>`:''}
+          </div>
+          <span style="font-size:.65rem;background:${r.ren?'var(--gold-bg)':'var(--bg)'};color:${r.ren?'var(--gold)':'var(--muted)'};border:1px solid ${r.ren?'rgba(184,136,74,.3)':'var(--border)'};border-radius:100px;padding:2px 9px">${r.ren?'Renovating':'Explore only'}</span>
+        </div>
+        <!-- Dimensions row -->
+        <div style="padding:10px 16px;border-bottom:1px solid var(--border);display:flex;gap:16px;flex-wrap:wrap;font-size:.75rem">
+          ${w&&l?`<span>📐 <strong>${w} × ${l}</strong> ${unit} floor</span>`:'<span style="color:var(--muted2)">No dimensions set</span>'}
+          ${h?`<span>↕ Height: <strong>${h} ${unit}</strong></span>`:''}
+          ${r.notes?`<span style="color:var(--muted)">📝 ${r.notes}</span>`:''}
+        </div>
+        <!-- Wall table -->
+        ${hasWalls ? `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+            <thead>
+              <tr style="background:var(--bg2)">
+                <th style="text-align:left;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Wall</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Size</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Gross</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Openings</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--sage);text-transform:uppercase;letter-spacing:.6px">Net Wall</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--blue);text-transform:uppercase;letter-spacing:.6px">Dado</th>
+                <th style="text-align:right;padding:7px 10px;font-size:.62rem;font-weight:600;color:var(--rust);text-transform:uppercase;letter-spacing:.6px">Paint</th>
+              </tr>
+            </thead>
+            <tbody>${wallRows}</tbody>
+          </table>
+        </div>` : `<div style="padding:12px 16px;font-size:.72rem;color:var(--muted2)">No wall measurements added yet. Edit the project setup to add wall sizes.</div>`}
+      </div>`;
+  }).join('');
 }
 
 // ── Project detail edit ───────────────────────────────────────────────────────
