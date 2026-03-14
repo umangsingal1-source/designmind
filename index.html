@@ -1821,11 +1821,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       </div>
 
       <div class="wf">
-        <span class="wf-l">Step 3 of 3</span>
+        <span class="wf-l">Step 3 of 3 — Brief complete</span>
         <div class="wf-r">
           <button class="btn-ghost" onclick="goStep(2)">← Back</button>
-          <button class="btn-ghost" onclick="saveFinish()">Save Only</button>
-          <button class="btn" onclick="showInspo()">Save & Browse Inspiration 📸</button>
+          <button class="btn-ghost btn-sm" onclick="showInspo()" style="font-size:.74rem">📸 Find Inspiration</button>
+          <button class="btn" onclick="saveFinish()">Save Project →</button>
         </div>
       </div>
     </div>
@@ -1916,6 +1916,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <select class="bfs" id="rh-proj-sel" onchange="loadRenderProject(this.value)" style="background:#FDFCFA;border:1px solid var(--border);border-radius:100px;padding:8px 24px 8px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;outline:none;cursor:pointer;min-width:180px"></select>
       <button class="btn-ghost btn-sm" onclick="openRHUpload()">+ Add Images</button>
+      <button class="btn-ghost btn-sm" onclick="rhAddRoomModal()" style="color:var(--sage);border-color:rgba(94,114,96,.3)">+ Add Room</button>
       <button class="btn btn-sm" style="background:#5E7260" onclick="saveRendersToSheets()">💾 Save Renders</button>
       <button class="btn btn-sm" style="background:#B8884A" onclick="openShareModal()">🔗 Share with Client</button>
     </div>
@@ -3518,25 +3519,54 @@ function closeModal(){document.getElementById('modal').classList.remove('open');
 function ovlClick(e){if(e.target===document.getElementById('modal'))closeModal();}
 function selP(el,k,ico,lbl){document.querySelectorAll('.po').forEach(o=>o.classList.remove('sel'));el.classList.add('sel');propSel={k,ico,lbl};valModal();}
 function valModal(){document.getElementById('createBtn').disabled=!(document.getElementById('np').value.trim()&&propSel);}
+let _creatingProj = false; // global lock — prevents any duplicate creation
+
 function createProj(){
   const name=document.getElementById('np').value.trim();if(!name||!propSel)return;
-  // Disable button immediately to prevent double-click duplicates
+
+  // Hard lock — if already creating, completely ignore this call
+  if(_creatingProj) return;
+  _creatingProj = true;
+
   const btn=document.getElementById('createBtn');
   if(btn){ btn.disabled=true; btn.textContent='Creating…'; }
+
   wizProj={name,type:propSel.k,icon:propSel.ico,label:propSel.lbl};
   closeModal();
+
   const cm={flat:'gold',villa:'sage',office:'blue',commercial:'rust',warehouse:'rust',other:'rust'};
-  const id='np_'+Date.now();
-  const proj={id,name,type:propSel.k,icon:propSel.ico,label:propSel.lbl,color:cm[propSel.k]||'gold',loc:'—',bud:'—',phase:'Active',pct:0,shareToken:id+'_share',sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],client:'—',createdAt:Date.now()};
-  // Read latest, dedup by id AND by name+type to catch any race conditions
-  const saved=RH.getProjs();
-  const alreadyExists = saved.some(p=>p.id===id || (p.name===name && p.type===propSel.k && Date.now()-p.createdAt<5000));
+  const ts = Date.now();
+  const id  = 'np_'+ts;
+  const proj = {
+    id, name,
+    type:propSel.k, icon:propSel.ico, label:propSel.lbl,
+    color:cm[propSel.k]||'gold',
+    loc:'—', bud:'—', phase:'Active', pct:0,
+    shareToken:id+'_share',
+    sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
+    client:'—', createdAt:ts
+  };
+
+  // Read once, check for duplicates by id OR by name+type within last 30 seconds
+  const saved = RH.getProjs();
+  const alreadyExists = saved.some(p =>
+    p.id === id ||
+    (p.name === name && p.type === propSel.k && (ts - (p.createdAt||0)) < 30000)
+  );
+
   if(!alreadyExists){
     saved.unshift(proj);
     RH.saveProjs(saved);
   }
+
   wizProj.id = id;
-  renderProjs();setTimeout(()=>startWiz(name),180);
+  renderProjs();
+
+  // Release lock only after wizard starts (200ms — enough to prevent any re-entry)
+  setTimeout(()=>{
+    _creatingProj = false;
+    startWiz(name);
+  }, 200);
 }
 
 /* ─── Wizard ────────────────────────────────────────────────────────────────── */
@@ -3788,7 +3818,45 @@ async function showInspo(){
   const curatedCount = ADMIN_CURATED.totalCount();
   const goToCurated = curatedCount >= 50;
 
-  // Navigate to Image Library
+  // Show what-next modal first, then offer to browse library
+  document.getElementById('wiz-done-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'wiz-done-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.7);backdrop-filter:blur(10px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:24px;padding:36px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(28,26,23,.4)">
+      <div style="font-size:3rem;margin-bottom:14px">🏠</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:8px;color:var(--ink)">${wizProj.name||'Project'} is ready!</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:28px">
+        Your rooms are saved. What would you like to do next?
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn" style="background:#B8884A;width:100%;font-size:.85rem" onclick="document.getElementById('wiz-done-modal').remove();wizGoToRenders()">
+          📸 Upload Renders →
+          <div style="font-size:.68rem;font-weight:400;opacity:.75;margin-top:2px">Add design renders for client review</div>
+        </button>
+        <button class="btn" style="background:#3A6B8A;width:100%;font-size:.85rem" onclick="document.getElementById('wiz-done-modal').remove();_doOpenLibrary()">
+          🖼 Browse Inspiration →
+          <div style="font-size:.68rem;font-weight:400;opacity:.75;margin-top:2px">Find reference images for your design</div>
+        </button>
+        <button class="btn" style="background:#5E7260;width:100%;font-size:.85rem" onclick="document.getElementById('wiz-done-modal').remove();wizGoToBOQ()">
+          📋 Start BOQ →
+          <div style="font-size:.68rem;font-weight:400;opacity:.75;margin-top:2px">Build your bill of quantities</div>
+        </button>
+        <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="document.getElementById('wiz-done-modal').remove();goHome()">
+          Go to Dashboard
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  return; // stop here — _doOpenLibrary handles the navigation below
+}
+
+// Internal: opens library with style pre-filled (called from wiz-done-modal)
+function _doOpenLibrary(){
+  const firstStyle = (rooms||[]).filter(r=>r.ren&&r.brief?.style).map(r=>r.brief.style)[0]||'';
+  const curatedCount = ADMIN_CURATED.totalCount();
+  const goToCurated  = curatedCount >= 50;
   goHome();
   setTimeout(()=>{
     openLibrary();
@@ -3936,15 +4004,60 @@ function toast(msg){const e=document.getElementById('toastEl');e.textContent=msg
 function saveFinish(){
   try{
     const allProjs = RH.getProjs();
-    const projIdx = allProjs.findIndex(p=>p.id===wizProj.id);
+    const projIdx  = allProjs.findIndex(p=>p.id===wizProj.id);
     if(projIdx>-1 && rooms.length){
       allProjs[projIdx].sections = rooms.map(r=>(r.nickname||r.name));
-      allProjs[projIdx].rooms = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
+      allProjs[projIdx].rooms    = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
       RH.saveProjs(allProjs);
     }
   }catch(e){ console.warn('Could not save rooms to project:', e); }
-  toast('✦ Project saved!');
-  setTimeout(goHome, 1200);
+
+  // Show a "what next" choice: upload renders or go home
+  const projName = wizProj.name || 'Project';
+  document.getElementById('wiz-done-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'wiz-done-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.7);backdrop-filter:blur(10px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:24px;padding:36px 28px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(28,26,23,.4)">
+      <div style="font-size:3rem;margin-bottom:14px">🏠</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:300;margin-bottom:8px;color:var(--ink)">${projName} is ready!</div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.8;margin-bottom:28px">
+        Your project is set up with ${rooms.filter(r=>r.ren).length||rooms.length} room${(rooms.filter(r=>r.ren).length||rooms.length)!==1?'s':''}. What would you like to do next?
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn" style="background:#B8884A;width:100%;font-size:.85rem" onclick="document.getElementById('wiz-done-modal').remove();wizGoToRenders()">
+          📸 Upload Renders → 
+          <div style="font-size:.68rem;font-weight:400;opacity:.75;margin-top:2px">Add design renders for client review</div>
+        </button>
+        <button class="btn" style="background:#5E7260;width:100%;font-size:.85rem" onclick="document.getElementById('wiz-done-modal').remove();wizGoToBOQ()">
+          📋 Start BOQ →
+          <div style="font-size:.68rem;font-weight:400;opacity:.75;margin-top:2px">Build your bill of quantities</div>
+        </button>
+        <button class="btn-ghost" style="width:100%;font-size:.78rem" onclick="document.getElementById('wiz-done-modal').remove();goHome()">
+          Go to Dashboard
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+function wizGoToRenders(){
+  const projId = wizProj.id;
+  openRendersHub();
+  setTimeout(()=>{
+    const sel = document.getElementById('rh-proj-sel');
+    if(sel){ sel.value = projId; loadRenderProject(projId); }
+  }, 250);
+}
+
+function wizGoToBOQ(){
+  const projId = wizProj.id;
+  openBOQ();
+  setTimeout(()=>{
+    const sel = document.getElementById('boq-proj-sel');
+    if(sel){ sel.value = projId; boqLoadProject(projId); }
+  }, 250);
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeLB();['modal-rh-upload','modal-ann','modal-share'].forEach(id=>ph2Close(id));}});
 
@@ -4067,10 +4180,24 @@ function loadRenderProject(id){
   const allProjs = getAllRHProjs();
   const proj = allProjs.find(p=>p.id===id);
   if(!proj) return;
-  document.getElementById('rh-title').innerHTML = proj.name.split(' ').map((w,i)=>i===1?`<em style="color:#B8884A;font-style:italic">${w}</em>`:w).join(' ');
-  document.getElementById('rh-sub').textContent = (proj.client||'Client')+' · '+proj.sections.length+' sections';
+
+  // Build a rich title from project name
+  const words = proj.name.split(' ');
+  const titleHtml = words.length > 1
+    ? words.map((w,i)=>i===1?`<em style="color:#B8884A;font-style:italic">${w}</em>`:w).join(' ')
+    : proj.name;
+  document.getElementById('rh-title').innerHTML = titleHtml;
+  document.getElementById('rh-sub').textContent = (proj.client||'Client')+' · '+proj.sections.length+' room'+(proj.sections.length!==1?'s':'');
+
   switchRHTab('all', document.querySelector('.rh-tab'));
   refreshRH();
+}
+
+function rhLaunchWizard(projId){
+  const proj = RH.getProjs().find(p=>p.id===projId);
+  if(!proj) return;
+  wizProj = {...proj};
+  startWiz(proj.name);
 }
 
 function getAllRHProjs(){
@@ -4300,6 +4427,78 @@ async function renderRHShare(proj){
 }
 
 // ── Upload ────────────────────────────────────────────────────────────────────
+// ── Add Room/Section to project from Renders Hub ─────────────────────────────
+function rhAddRoomModal(){
+  if(!rhProjId){ toast('Select a project first'); return; }
+  const proj = RH.getProjs().find(p=>p.id===rhProjId);
+  if(!proj){ toast('Project not found'); return; }
+
+  document.getElementById('rh-add-room-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'rh-add-room-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const existing = (proj.sections||[]).join(', ');
+
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.3)">
+      <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300;margin-bottom:4px">Add a Room</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;line-height:1.6">
+        Current rooms: <em style="color:var(--ink2)">${existing || 'None yet'}</em>
+      </div>
+      <div style="font-size:.69rem;color:var(--muted2);margin-bottom:18px;line-height:1.6">
+        Add a room to expand the project scope. The new room will appear in the section selector when uploading renders.
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Room Name <span style="color:var(--rust)">*</span></label>
+        <input class="fi" id="rh-new-room-name" placeholder="e.g. Guest Bedroom, Powder Room, Study…" oninput="rhNewRoomValidate()">
+        <div style="font-size:.62rem;color:var(--muted2);margin-top:3px">This name will appear exactly as typed in your section selector.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+        ${['Bedroom','Bathroom','Kitchen','Living Room','Study','Pooja Room','Balcony','Home Theatre','Gym','Kids Room'].map(s=>
+          `<button onclick="document.getElementById('rh-new-room-name').value='${s}';rhNewRoomValidate()" 
+            style="font-size:.68rem;padding:4px 10px;border-radius:100px;border:1px solid var(--border);background:var(--bg2);color:var(--ink2);cursor:pointer;white-space:nowrap">${s}</button>`
+        ).join('')}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('rh-add-room-modal').remove()">Cancel</button>
+        <button class="btn" style="flex:2;background:#5E7260" id="rh-add-room-btn" onclick="rhAddRoomConfirm()" disabled>Add Room →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+  setTimeout(()=>document.getElementById('rh-new-room-name')?.focus(), 150);
+}
+
+function rhNewRoomValidate(){
+  const val = document.getElementById('rh-new-room-name')?.value.trim()||'';
+  const btn = document.getElementById('rh-add-room-btn');
+  if(btn) btn.disabled = !val || val.length < 2;
+}
+
+function rhAddRoomConfirm(){
+  const roomName = document.getElementById('rh-new-room-name')?.value.trim()||'';
+  if(!roomName || roomName.length < 2){ toast('Please enter a room name'); return; }
+
+  const projs = RH.getProjs();
+  const idx   = projs.findIndex(p=>p.id===rhProjId);
+  if(idx === -1){ toast('Project not found'); return; }
+
+  // Add to sections
+  projs[idx].sections = [...(projs[idx].sections||[]), roomName];
+  // Also add to rooms metadata if rooms array exists
+  if(projs[idx].rooms){
+    projs[idx].rooms.push({ name:roomName, nickname:roomName, w:'', l:'', unit:'ft', ren:true });
+  }
+  RH.saveProjs(projs);
+
+  document.getElementById('rh-add-room-modal')?.remove();
+  toast(`✅ "${roomName}" added to ${projs[idx].name}`);
+
+  // Refresh renders hub to show new section
+  loadRenderProject(rhProjId);
+}
+
 function openRHUpload(){
   const proj = getAllRHProjs().find(p=>p.id===rhProjId);
   if(!proj){ toast('Select a project first'); return; }
