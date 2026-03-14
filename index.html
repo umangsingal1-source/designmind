@@ -147,6 +147,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .search-inp:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,136,74,.1);}
 .search-inp::placeholder{color:var(--muted2);}
 .search-ico{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted2);font-size:.83rem;}
+.proj-filter-pill{background:var(--white);border:1px solid var(--border);border-radius:100px;padding:6px 14px;font-size:.72rem;color:var(--muted);cursor:pointer;transition:all .18s;font-family:'Outfit',sans-serif;white-space:nowrap;}
+.proj-filter-pill:hover{border-color:var(--gold);color:var(--gold);}
+.proj-filter-pill.on{background:var(--ink);border-color:var(--ink);color:var(--bg);font-weight:500;}
 .pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:17px;}
 .pc{background:var(--white);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .28s cubic-bezier(.22,1,.36,1);box-shadow:var(--sh);}
 .pc:hover{transform:translateY(-4px);box-shadow:var(--shl);border-color:var(--border2);}
@@ -688,6 +691,9 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .boq-cell-inp::placeholder{color:var(--muted2);}
 .boq-cell-sel{width:100%;background:transparent;border:none;font-family:'Outfit',sans-serif;font-size:.78rem;color:var(--ink);outline:none;cursor:pointer;}
 .boq-act-btns{display:flex;gap:4px;}
+.boq-drag-handle{cursor:grab;color:var(--muted2);font-size:.75rem;padding:0 4px;user-select:none;opacity:.4;}
+.boq-drag-handle:hover{opacity:1;color:var(--muted);}
+.boq-drag-ghost{opacity:.4;background:var(--gold-bg)!important;}
 /* Touch devices: always show action buttons (no hover) */
 @media(hover:none),(pointer:coarse){
   tr:not(:hover) .boq-act-btns .boq-act-del{ opacity:1; }
@@ -992,6 +998,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .pexels-attr{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(28,26,23,.7));padding:20px 8px 7px;font-size:.58rem;color:rgba(255,255,255,.8);}
 .pexels-badge{position:absolute;top:7px;right:7px;background:rgba(5,191,113,.9);color:white;font-size:.56rem;font-weight:700;padding:2px 6px;border-radius:100px;}
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 </head>
 <body>
 
@@ -1212,6 +1223,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     <li class="nlink" onclick="openSnagList()">Snag List</li>
     <li class="nlink" onclick="openPortfolio()">My Portfolio</li>
     <li class="nlink" onclick="openPlugins()">Plugins</li>
+    <li class="nlink" onclick="openAnalytics()">📊 Analytics</li>
   </ul>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="notif-bell-wrap" onclick="openNotifPanel()">
@@ -1247,9 +1259,16 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     <div class="stat"><div class="sdot" style="background:var(--rust)"></div><strong id="stat-snags">0</strong> Snags</div>
     <div class="stat"><div class="sdot" style="background:var(--blue)"></div><strong id="stat-boq">₹0</strong> BOQ</div>
   </div>
-  <div class="search-wrap">
-    <span class="search-ico">🔍</span>
-    <input class="search-inp" placeholder="Search projects…" oninput="filterProj(this.value)">
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+    <div class="search-wrap" style="flex:1;min-width:180px">
+      <span class="search-ico">🔍</span>
+      <input class="search-inp" id="proj-search" placeholder="Search projects…" oninput="filterProj()">
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="proj-filter-pill on" id="pf-all"     onclick="setProjFilter('all')">All</button>
+      <button class="proj-filter-pill"   id="pf-active"   onclick="setProjFilter('active')">Active</button>
+      <button class="proj-filter-pill"   id="pf-completed" onclick="setProjFilter('completed')">Completed</button>
+    </div>
   </div>
 
   <!-- ── HOME WIDGETS: Expense Tracker + Global To-Do ── -->
@@ -1339,6 +1358,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
         <span>📍 <span id="pd-loc">—</span></span>
         <span>💰 <span id="pd-bud">—</span></span>
         <span>🏗 <span id="pd-phase">—</span></span>
+        <span id="pd-client-contact" style="display:none">
+          <span id="pd-client-phone-link" style="cursor:pointer" onclick="pdCallClient()">📞 <span id="pd-client-phone">—</span></span>
+          &nbsp;·&nbsp;
+          <span id="pd-client-wa" style="cursor:pointer" onclick="pdWhatsAppClient()">💬 WhatsApp</span>
+        </span>
       </div>
       <div class="pd-quick-btns">
         <button class="pd-qbtn" onclick="pdGoRenders()">📸 Renders</button>
@@ -1348,7 +1372,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
         <button class="pd-qbtn" onclick="pdGoSnag()">🔧 Snag List</button>
       </div>
     </div>
-    <div style="text-align:right">
+    <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+      <button onclick="openProjEdit()" style="background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:white;border-radius:100px;padding:5px 13px;font-size:.7rem;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">✏️ Edit</button>
       <div class="pd-hero-pct" id="pd-pct">0%</div>
       <div style="font-size:.62rem;color:rgba(255,255,255,.4);margin-top:2px;letter-spacing:1px;text-transform:uppercase">Complete</div>
     </div>
@@ -1625,7 +1650,6 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       <div class="step on" id="si1"><div class="sc">1</div><span class="sl">Blueprint</span></div>
       <div class="step" id="si2"><div class="sc">2</div><span class="sl">Rooms</span></div>
       <div class="step" id="si3"><div class="sc">3</div><span class="sl">Brief</span></div>
-      <div class="step" id="si4"><div class="sc">4</div><span class="sl">Images</span></div>
     </div>
 
     <!-- STEP 1 -->
@@ -1651,7 +1675,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
         <button class="btn-ghost" onclick="skipBP()">Skip — add rooms manually →</button>
       </div>
       <div class="wf">
-        <span class="wf-l">Step 1 of 4</span>
+        <span class="wf-l">Step 1 of 3</span>
         <div class="wf-r">
           <button class="btn-ghost" onclick="goHome()">Cancel</button>
           <button class="btn" id="bp-btn" disabled onclick="proceedBP()">Analyse Blueprint →</button>
@@ -1684,7 +1708,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
         <button class="add-room-btn" onclick="addRoom()">+ Add a room manually</button>
       </div>
       <div class="wf">
-        <span class="wf-l">Step 2 of 4</span>
+        <span class="wf-l">Step 2 of 3</span>
         <div class="wf-r">
           <button class="btn-ghost" onclick="goStep(1)">← Back</button>
           <button class="btn" onclick="goStep(3)">Continue →</button>
@@ -1756,43 +1780,68 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       </div>
 
       <div class="wf">
-        <span class="wf-l">Step 3 of 4</span>
+        <span class="wf-l">Step 3 of 3</span>
         <div class="wf-r">
           <button class="btn-ghost" onclick="goStep(2)">← Back</button>
-          <button class="btn" onclick="showInspo()">Find Inspiration 📸</button>
+          <button class="btn-ghost" onclick="saveFinish()">Save Only</button>
+          <button class="btn" onclick="showInspo()">Save & Browse Inspiration 📸</button>
         </div>
       </div>
     </div>
 
-    <!-- STEP 4 -->
-    <div class="sp" id="sp4">
-      <div class="gen-spin" id="genSpin">
-        <div class="orb"></div>
-        <div class="gen-t">Matching from library…</div>
-        <div class="gen-s">Scanning the library and selecting the best matching photos for each room based on your style, mood and material preferences.</div>
-        <div class="gen-steps">
-          <div class="gs"><div class="gd act" id="gd1"></div><span>Reading project brief and room details</span></div>
-          <div class="gs"><div class="gd" id="gd2"></div><span>Building image prompts for each room</span></div>
-          <div class="gs"><div class="gd" id="gd3"></div><span>Scoring library images</span></div>
-          <div class="gs"><div class="gd" id="gd4"></div><span>Rendering photorealistic images</span></div>
-          <div class="gs"><div class="gd" id="gd5"></div><span>Assembling your design board</span></div>
-        </div>
-        <div id="gen-status"></div>
-      </div>
-      <div id="aiRes" style="display:none"></div>
-      <div class="wf" id="sp4wf" style="display:none">
-        <span class="wf-l">✦ Design board complete</span>
-        <div class="wf-r">
-          <button class="btn-ghost" onclick="goStep(3)">← Edit Brief</button>
-          <button class="btn-outline" onclick="showInspo()">↺ Regenerate All</button>
-          <button class="btn" onclick="saveFinish()">Save Project →</button>
-        </div>
-      </div>
-    </div>
 
   </div>
 </div>
 </div><!-- /page -->
+
+
+<!-- ══ SCREEN: ANALYTICS ══ -->
+<div class="scr" id="s-analytics">
+  <div class="s-head">
+    <div><h1 class="s-title">Business <em>Analytics</em></h1><p class="s-sub">Revenue · Project performance · Growth insights</p></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-ghost" onclick="goHome()">← Back</button>
+      <button class="btn-ghost btn-sm" onclick="screenshotElement('s-analytics','DesignMind-Analytics')">📸 Export</button>
+    </div>
+  </div>
+
+  <!-- Summary KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px" id="analytics-kpis"></div>
+
+  <!-- Charts row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" class="analytics-charts-row">
+    <!-- Revenue by project -->
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:20px">
+      <div style="font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Revenue by Project</div>
+      <canvas id="chart-revenue" height="220"></canvas>
+    </div>
+    <!-- BOQ status breakdown -->
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:20px">
+      <div style="font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">BOQ Status Breakdown</div>
+      <canvas id="chart-status" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Second row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" class="analytics-charts-row">
+    <!-- Monthly expense/income -->
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:20px">
+      <div style="font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Income vs Expenses</div>
+      <canvas id="chart-cashflow" height="220"></canvas>
+    </div>
+    <!-- Render approval rate -->
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;padding:20px">
+      <div style="font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px">Render Approval Rate</div>
+      <canvas id="chart-approvals" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Project table -->
+  <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:14px;overflow:hidden">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-size:.72rem;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Project Summary</div>
+    <div id="analytics-proj-table" style="overflow-x:auto"></div>
+  </div>
+</div>
 
 <!-- MODAL -->
 <div class="ovl" id="modal" onclick="ovlClick(event)">
@@ -1858,20 +1907,22 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   <div class="ph2-modal">
     <div class="ph2-mh"><div><div class="ph2-mt">Add Render Images</div><div class="ph2-ms">Upload renders — organised by section, unlimited images</div></div><button class="ph2-mx" onclick="ph2Close('modal-rh-upload')">✕</button></div>
     <div class="ph2-mb">
-      <div class="fg"><label class="fl">Section</label><select class="bfs" id="rhu-section" style="width:100%"></select></div>
+      <div class="fg"><label class="fl">Default Section <span style="font-size:.62rem;color:var(--muted2);text-transform:none;letter-spacing:0">(applied to all — change per image below)</span></label><select class="bfs" id="rhu-section" style="width:100%" onchange="rhuUpdateAllSections(this.value)"></select></div>
       <div class="fg"><label class="fl">Images</label>
         <div class="rh-uz" id="rhu-zone" ondragover="rhuDzO(event)" ondragleave="rhuDzL()" ondrop="rhuDzD(event)">
           <input type="file" id="rhu-files" accept="image/*" multiple onchange="rhuHandleFiles(this.files)">
           <div style="font-size:1.6rem;opacity:.5;margin-bottom:6px">🖼️</div>
           <div style="font-size:.82rem;font-weight:500;color:var(--ink);margin-bottom:3px">Drop images or click to browse</div>
-          <div style="font-size:.72rem;color:var(--muted)">PNG · JPG · WEBP · Multiple files OK</div>
+          <div style="font-size:.72rem;color:var(--muted)">PNG · JPG · WEBP · Multiple files OK — assign sections individually below</div>
         </div>
       </div>
       <div id="rhu-preview" style="display:none;margin-bottom:14px">
-        <div class="fl"><span id="rhu-count">0</span> images selected</div>
-        <div id="rhu-thumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="fl"><span id="rhu-count">0</span> images selected</div>
+        </div>
+        <div id="rhu-thumbs"></div>
       </div>
-      <div class="fg"><label class="fl">Note <span style="font-size:.64rem;color:var(--muted2);text-transform:none;letter-spacing:0">(optional)</span></label><input class="fi" id="rhu-note" placeholder="e.g. Option A — warm palette, marble floor"></div>
+      <div class="fg"><label class="fl">Note <span style="font-size:.64rem;color:var(--muted2);text-transform:none;letter-spacing:0">(optional — applies to all)</span></label><input class="fi" id="rhu-note" placeholder="e.g. Option A — warm palette, marble floor"></div>
     </div>
     <div class="ph2-mf"><button class="btn-ghost" onclick="ph2Close('modal-rh-upload')">Cancel</button><button class="btn" id="rhu-btn" disabled style="background:#B8884A" onclick="rhuConfirm()">Add to Project →</button></div>
   </div>
@@ -1919,6 +1970,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       </div>
       <div class="fg"><label class="fl">Client Portal Link</label>
         <div style="display:flex;gap:7px"><input class="fi" id="share-url-inp" readonly style="font-family:monospace;font-size:.73rem;cursor:text;flex:1"><button class="btn btn-sm" style="background:#B8884A;flex-shrink:0" onclick="copyShareLink()">Copy</button></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:flex-start">
+        <div id="share-qr-wrap" style="flex-shrink:0"></div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:8px;justify-content:center">
+          <button class="btn" style="background:#25D366;width:100%" onclick="shareViaWhatsApp()">💬 Send via WhatsApp</button>
+          <button class="btn-ghost" style="width:100%" onclick="openQRModal(document.getElementById('share-url-inp').value,'Client Portal — QR Code')">🔲 Fullscreen QR</button>
+        </div>
       </div>
     </div>
     <div class="ph2-mf"><button class="btn-ghost" onclick="ph2Close('modal-share')">Close</button><button class="btn" style="background:#5E7260" onclick="copyShareLink()">📋 Copy Link</button></div>
@@ -2246,6 +2304,40 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
           <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Signup Leads</div>
           <div id="dev-leads-info" style="font-size:.71rem;line-height:1.9;color:var(--muted)">—</div>
         </div>
+
+        <!-- Curated Library Management -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)">✦ Curated Library</div>
+            <span id="admin-curated-count" style="font-size:.65rem;color:var(--gold)">0 photos</span>
+          </div>
+          <div style="font-size:.67rem;color:var(--muted2);line-height:1.6;margin-bottom:10px">
+            Add Pexels photo IDs to the curated library. Once you have <strong>50+</strong> photos, the wizard's "Find Inspiration" will take designers to the Curated tab instead of Web Search.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+            <input class="fi" id="admin-pexels-id" type="number" placeholder="Pexels Photo ID (e.g. 1571460)" style="flex:1;font-size:.75rem;min-width:180px">
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <select class="bfs" id="admin-photo-room" style="font-size:.72rem">
+              <option value="living">Living Room</option><option value="bedroom">Bedroom</option>
+              <option value="kitchen">Kitchen</option><option value="bathroom">Bathroom</option>
+              <option value="dining">Dining</option><option value="balcony">Balcony</option>
+              <option value="study">Study</option><option value="pooja">Pooja Room</option>
+            </select>
+            <select class="bfs" id="admin-photo-mood" style="font-size:.72rem">
+              <option value="warm">Warm</option><option value="cool">Cool</option>
+              <option value="dark">Dark</option><option value="neutral">Neutral</option><option value="bright">Bright</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input class="fi" id="admin-photo-styles" placeholder="Styles (comma-separated): contemporary, luxury" style="font-size:.72rem;flex:1">
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input class="fi" id="admin-photo-tags" placeholder="Tags: marble, sofa, plants" style="font-size:.72rem;flex:1">
+          </div>
+          <button class="btn btn-sm" style="background:#B8884A;width:100%;margin-bottom:8px" onclick="adminAddCuratedPhoto()">+ Add to Curated Library</button>
+          <div id="admin-curated-preview" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:200px;overflow-y:auto"></div>
+        </div>
       </div>
     </div>
 
@@ -2438,10 +2530,14 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
       <div class="fg"><label class="fl">Your Portfolio Link</label>
         <div style="display:flex;gap:7px"><input class="fi" id="port-share-url" readonly style="font-family:monospace;font-size:.69rem;flex:1"><button class="btn btn-sm" style="background:#B8884A" onclick="copyPortfolioLink()">Copy</button></div>
       </div>
+      <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+        <div id="port-share-qr" style="flex-shrink:0"></div>
+        <button class="btn-ghost" style="font-size:.72rem" onclick="openQRModal(document.getElementById('port-share-url').value,'Portfolio QR Code')">🔲 Enlarge QR</button>
+      </div>
     </div>
     <div class="ph2-mf">
       <button class="btn-ghost" onclick="ph2Close('modal-port-share')">Close</button>
-      <button class="btn" style="background:#5E7260" onclick="portShareWhatsApp()">📲 WhatsApp</button>
+      <button class="btn" style="background:#25D366" onclick="portShareWhatsApp()">💬 WhatsApp</button>
       <button class="btn" style="background:#B8884A" onclick="copyPortfolioLink()">📋 Copy</button>
     </div>
   </div>
@@ -2517,9 +2613,12 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     <div><h1 class="s-title">BOQ & <em>Cost Sheet</em></h1><p class="s-sub" id="boq-sub">Bill of Quantities · Procurement · Cost Analysis</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select class="bfs" id="boq-proj-sel" onchange="boqLoadProject(this.value)" style="background:#FDFCFA;border:1px solid var(--border);border-radius:100px;padding:8px 24px 8px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;outline:none;cursor:pointer;min-width:180px"></select>
+      <button class="btn-ghost btn-sm" onclick="openPaymentsDashboard()" style="white-space:nowrap">📊 All Payments</button>
       <button class="boq-ai-btn" id="boq-ai-btn" onclick="boqAutoGenerate()">✦ Generate BOQ Template</button>
       <button class="btn-ghost btn-sm" onclick="boqExportCSV()">📥 Export CSV</button>
       <button class="btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+      <button class="btn-ghost btn-sm" onclick="screenshotElement('s-boq','BOQ-'+document.getElementById('boq-proj-sel')?.options[document.getElementById('boq-proj-sel')?.selectedIndex]?.text||'export')">📸 Screenshot</button>
+      <button class="btn btn-sm" style="background:#A84D3A" onclick="boqExportPDF()">📄 Export PDF</button>
     </div>
   </div>
 
@@ -2921,7 +3020,8 @@ function scoreImg(img, roomName, styles, mood){
 
 // ─── Main query function (swap this for API call in production) ───────────────
 function getImages(roomName, styles=[], mood='', count=3, offset=0){
-  const scored = IMG_DB.map(img=>({img, score:scoreImg(img,roomName,styles,mood)}))
+  const fullDB = getFullImgDB(); // IMG_DB + admin curated
+  const scored = fullDB.map(img=>({img, score:scoreImg(img,roomName,styles,mood)}))
     .filter(x=>x.score>0)
     .sort((a,b)=>b.score-a.score || (a.img.u+offset)%13 - (b.img.u+offset)%13);
 
@@ -2935,7 +3035,7 @@ function getImages(roomName, styles=[], mood='', count=3, offset=0){
     let rt='living';
     const RMAP2={living:'living',bedroom:'bedroom',bed:'bedroom',master:'bedroom',kitchen:'kitchen',bath:'bathroom',dining:'dining',balcony:'balcony',study:'study',pooja:'pooja'};
     for(const [k,v] of Object.entries(RMAP2)){if(rn.includes(k)){rt=v;break;}}
-    for(const img of IMG_DB){ if(img.r===rt&&!seen.has(img.i)){seen.add(img.i);pool.push(img);if(pool.length>=count*3)break;} }
+    for(const img of fullDB){ if(img.r===rt&&!seen.has(img.i)){seen.add(img.i);pool.push(img);if(pool.length>=count*3)break;} }
   }
 
   // Pick spread across pool for visual variety
@@ -2969,13 +3069,28 @@ function libFilter(){
   const style = document.getElementById('lib-style')?.value||'';
   const mood  = document.getElementById('lib-mood')?.value||'';
 
-  // ── Curated tab now shows the user's own renders (RENDER_TAGS) ──
+  // ── Curated tab: user's own renders + admin-added Pexels photos ──
   const allRenderTags = RENDER_TAGS.get();
+  const adminPhotos   = ADMIN_CURATED.get();
 
-  // Update badge
-  document.querySelectorAll('#lib-total-badge').forEach(el=>el&&(el.textContent=allRenderTags.length));
+  // Convert admin Pexels photos to display format
+  const adminAsRenderTags = adminPhotos.map(p=>({
+    imgId: 'admin_'+p.i,
+    dataUrl: `https://images.pexels.com/photos/${p.i}/pexels-photo-${p.i}.jpeg?auto=compress&cs=tinysrgb&w=600`,
+    thumbUrl: `https://images.pexels.com/photos/${p.i}/pexels-photo-${p.i}.jpeg?auto=compress&cs=tinysrgb&w=280&h=280&fit=crop`,
+    room: p.r, style: p.s[0]||'', mood: p.m,
+    tags: p.t||[], materials: [],
+    projName: '✦ Curated', source: 'admin',
+    pexelsId: p.i,
+  }));
 
-  let results = allRenderTags.filter(t=>{
+  const combined = [...allRenderTags, ...adminAsRenderTags];
+
+  // Update badge — total count
+  const totalCount = ADMIN_CURATED.totalCount();
+  document.querySelectorAll('#lib-total-badge').forEach(el=>el&&(el.textContent=combined.length));
+
+  let results = combined.filter(t=>{
     if(room  && !(t.room||'').toLowerCase().includes(room.toLowerCase()))   return false;
     if(style && !(t.style||'').toLowerCase().includes(style.toLowerCase())) return false;
     if(mood  && !(t.mood||'').toLowerCase().includes(mood.toLowerCase()))   return false;
@@ -2989,15 +3104,15 @@ function libFilter(){
   const grid    = document.getElementById('lib-grid');
   const empty   = document.getElementById('lib-empty');
   const showing = document.getElementById('lib-showing');
-  if(showing) showing.textContent = results.length + ' renders';
+  if(showing) showing.textContent = results.length + (adminPhotos.length ? ` photos (${allRenderTags.length} renders + ${adminPhotos.length} curated)` : ' renders');
 
-  if(!allRenderTags.length){
+  if(!combined.length){
     if(grid)  grid.style.display='none';
     if(empty) { empty.style.display='block'; empty.innerHTML=`
       <div style="font-size:2.8rem;margin-bottom:14px">📸</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:6px">No renders yet</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:6px">No photos yet</div>
       <div style="font-size:.78rem;color:var(--muted);line-height:1.7;max-width:320px;margin:0 auto">
-        Upload renders in <strong>Client Renders</strong> and they'll appear here automatically, tagged by style, room and mood.
+        Upload renders in <strong>Client Renders</strong> or ask your admin to add curated photos.
       </div>
       <button class="btn" style="margin-top:16px;background:var(--ink)" onclick="openRendersHub()">Go to Client Renders →</button>`; }
     return;
@@ -3007,7 +3122,7 @@ function libFilter(){
     if(grid)  grid.style.display='none';
     if(empty) { empty.style.display='block'; empty.innerHTML=`
       <div style="font-size:2.8rem;margin-bottom:12px">🔍</div>
-      <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:6px">No renders match</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:6px">No photos match</div>
       <div style="font-size:.8rem">Try different filters or <button class="btn-ghost btn-sm" style="margin-left:6px" onclick="libClear()">clear all</button></div>`; }
     return;
   }
@@ -3021,6 +3136,7 @@ function libFilter(){
   grid.innerHTML = results.map(t=>{
     const isFav = favUrls.has(t.dataUrl);
     const escapedUrl = t.dataUrl.replace(/'/g, "\\'");
+    const isAdmin = t.source==='admin';
     return `
     <div style="border-radius:11px;overflow:hidden;border:1px solid var(--border);background:var(--white);cursor:pointer;transition:all .28s;position:relative"
       onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--shl)'"
@@ -3031,6 +3147,7 @@ function libFilter(){
           onmouseover="this.style.transform='scale(1.04)'" onmouseout="this.style.transform=''">
         ${t.room?`<div style="position:absolute;top:8px;left:8px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);border-radius:100px;padding:3px 9px;font-size:.58rem;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--ink)">${t.room}</div>`:''}
         ${t.mood?`<div style="position:absolute;top:8px;right:8px;background:rgba(0,0,0,.45);backdrop-filter:blur(4px);border-radius:100px;padding:3px 9px;font-size:.56rem;color:rgba(255,255,255,.9)">${t.mood}</div>`:''}
+        ${isAdmin?`<div style="position:absolute;bottom:8px;left:8px;background:rgba(184,136,74,.9);border-radius:100px;padding:2px 8px;font-size:.55rem;color:white;font-weight:500">✦ Curated</div>`:''}
         <button onclick="event.stopPropagation();libCuratedToggleFav('${escapedUrl}',this)"
           data-fav="${isFav?'1':'0'}"
           style="position:absolute;bottom:8px;right:8px;background:${isFav?'rgba(168,77,58,.9)':'rgba(247,244,239,.9)'};border:none;cursor:pointer;font-size:.95rem;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15);transition:all .2s"
@@ -3041,7 +3158,7 @@ function libFilter(){
       </div>
       <div style="padding:11px 13px">
         <div style="font-size:.8rem;font-weight:500;color:var(--ink);margin-bottom:3px">${(t.style||'Render')} · ${t.room||'Room'}</div>
-        <div style="font-size:.69rem;color:var(--muted)">${t.projName?'<em>'+t.projName+'</em>':''} ${(t.tags||[]).slice(0,2).join(' · ')}</div>
+        <div style="font-size:.69rem;color:var(--muted)">${isAdmin?'<em style="color:var(--gold)">✦ Curated</em>':t.projName?'<em>'+t.projName+'</em>':''} ${(t.tags||[]).slice(0,2).join(' · ')}</div>
       </div>
     </div>`;
   }).join('');
@@ -3103,8 +3220,7 @@ function renderProjs(){
   const g=document.getElementById('pg');
   g.querySelectorAll('.pc').forEach(c=>c.remove());
   g.querySelectorAll('.empty-state').forEach(c=>c.remove());
-  const rhProjs = RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',label:p.type||'Project',color:'gold',loc:p.client||'—',bud:'—',phase:p.completed?'Completed':'Active',pct:p.completed?100:0,type:p.type,completed:p.completed}));
-  const allProjs=[...PROJS,...rhProjs];
+  const allProjs = RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',label:p.type||'Project',color:'gold',loc:p.client||'—',bud:'—',phase:p.completed?'Completed':'Active',pct:p.completed?100:0,type:p.type,completed:p.completed}));
   if(!allProjs.length){
     const empty=document.createElement('div');
     empty.className='empty-state';
@@ -3150,7 +3266,24 @@ function mkPC(p){
   };
   return d;
 }
-function filterProj(q){q=q.toLowerCase();document.querySelectorAll('.pc').forEach(c=>{c.style.display=c.querySelector('.pc-name')?.textContent.toLowerCase().includes(q)?'':'none';});}
+let _projFilter='all';
+function setProjFilter(f){
+  _projFilter=f;
+  document.querySelectorAll('.proj-filter-pill').forEach(p=>p.classList.remove('on'));
+  document.getElementById('pf-'+f)?.classList.add('on');
+  filterProj();
+}
+function filterProj(){
+  const q=(document.getElementById('proj-search')?.value||'').toLowerCase();
+  document.querySelectorAll('.pc').forEach(c=>{
+    const name=(c.querySelector('.pc-name')?.textContent||'').toLowerCase();
+    const det=(c.querySelector('.pc-det')?.textContent||'').toLowerCase();
+    const isCompleted=c.querySelector('.ppill')?.textContent.includes('Completed');
+    const matchText=!q||(name+' '+det).includes(q);
+    const matchFilter=_projFilter==='all'||((_projFilter==='completed')===!!isCompleted);
+    c.style.display=(matchText&&matchFilter)?'':'none';
+  });
+}
 
 // ── DELETE PROJECT ────────────────────────────────────────────────────────────
 function confirmDeleteProject(projId, projName){
@@ -3336,18 +3469,22 @@ function selP(el,k,ico,lbl){document.querySelectorAll('.po').forEach(o=>o.classL
 function valModal(){document.getElementById('createBtn').disabled=!(document.getElementById('np').value.trim()&&propSel);}
 function createProj(){
   const name=document.getElementById('np').value.trim();if(!name||!propSel)return;
+  // Disable button immediately to prevent double-click duplicates
+  const btn=document.getElementById('createBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Creating…'; }
   wizProj={name,type:propSel.k,icon:propSel.ico,label:propSel.lbl};
   closeModal();
   const cm={flat:'gold',villa:'sage',office:'blue',commercial:'rust',warehouse:'rust',other:'rust'};
   const id='np_'+Date.now();
-  const proj={id,name,type:propSel.k,icon:propSel.ico,label:propSel.lbl,color:cm[propSel.k]||'gold',loc:'—',bud:'—',phase:'Phase 1 · New',pct:0,shareToken:id+'_share',sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],client:'—',createdAt:Date.now()};
-  PROJS.unshift(proj);
-  // Persist to localStorage so share links work cross-device
+  const proj={id,name,type:propSel.k,icon:propSel.ico,label:propSel.lbl,color:cm[propSel.k]||'gold',loc:'—',bud:'—',phase:'Active',pct:0,shareToken:id+'_share',sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],client:'—',createdAt:Date.now()};
+  // Read latest, dedup by id AND by name+type to catch any race conditions
   const saved=RH.getProjs();
-  if(!saved.find(p=>p.id===id)){
+  const alreadyExists = saved.some(p=>p.id===id || (p.name===name && p.type===propSel.k && Date.now()-p.createdAt<5000));
+  if(!alreadyExists){
     saved.unshift(proj);
     RH.saveProjs(saved);
   }
+  wizProj.id = id;
   renderProjs();setTimeout(()=>startWiz(name),180);
 }
 
@@ -3435,29 +3572,29 @@ function smartDetectRooms(b64){
 
 function bhkRooms(bhk){
   const base = [
-    {name:'Living Room',      w:'16', l:'20', unit:'ft', ren:true,  brief:{}},
-    {name:'Kitchen',          w:'9',  l:'11', unit:'ft', ren:true,  brief:{}},
-    {name:'Dining Area',      w:'10', l:'12', unit:'ft', ren:false, brief:{}},
-    {name:'Master Bathroom',  w:'6',  l:'8',  unit:'ft', ren:false, brief:{}},
-    {name:'Balcony',          w:'5',  l:'14', unit:'ft', ren:false, brief:{}},
+    {name:'Living Room',      nickname:'', w:'16', l:'20', unit:'ft', ren:true,  brief:{}},
+    {name:'Kitchen',          nickname:'', w:'9',  l:'11', unit:'ft', ren:true,  brief:{}},
+    {name:'Dining Area',      nickname:'', w:'10', l:'12', unit:'ft', ren:false, brief:{}},
+    {name:'Master Bathroom',  nickname:'', w:'6',  l:'8',  unit:'ft', ren:false, brief:{}},
+    {name:'Balcony',          nickname:'', w:'5',  l:'14', unit:'ft', ren:false, brief:{}},
   ];
   const beds = [
-    {name:'Master Bedroom',   w:'14', l:'16', unit:'ft', ren:true,  brief:{}},
-    {name:'Bedroom 2',        w:'12', l:'13', unit:'ft', ren:false, brief:{}},
-    {name:'Bedroom 3',        w:'11', l:'12', unit:'ft', ren:false, brief:{}},
-    {name:'Bedroom 4',        w:'10', l:'11', unit:'ft', ren:false, brief:{}},
+    {name:'Master Bedroom',   nickname:'', w:'14', l:'16', unit:'ft', ren:true,  brief:{}},
+    {name:'Bedroom 2',        nickname:'', w:'12', l:'13', unit:'ft', ren:false, brief:{}},
+    {name:'Bedroom 3',        nickname:'', w:'11', l:'12', unit:'ft', ren:false, brief:{}},
+    {name:'Bedroom 4',        nickname:'', w:'10', l:'11', unit:'ft', ren:false, brief:{}},
   ];
   return [...base, ...beds.slice(0, Math.max(1, bhk))];
 }
 function loadDefaults(){rooms=defaultRooms();document.getElementById('analysisSpin').style.display='none';document.getElementById('roomsArea').style.display='block';renderRooms();}
 function defaultRooms(){return[
-  {name:'Living Room',w:'16',l:'20',unit:'ft',ren:true,brief:{}},
-  {name:'Master Bedroom',w:'14',l:'16',unit:'ft',ren:true,brief:{}},
-  {name:'Bedroom 2',w:'12',l:'13',unit:'ft',ren:false,brief:{}},
-  {name:'Kitchen',w:'9',l:'11',unit:'ft',ren:true,brief:{}},
-  {name:'Master Bathroom',w:'6',l:'8',unit:'ft',ren:false,brief:{}},
-  {name:'Dining Area',w:'10',l:'12',unit:'ft',ren:false,brief:{}},
-  {name:'Balcony',w:'5',l:'14',unit:'ft',ren:false,brief:{}},
+  {name:'Living Room',nickname:'',w:'16',l:'20',unit:'ft',ren:true,brief:{}},
+  {name:'Master Bedroom',nickname:'',w:'14',l:'16',unit:'ft',ren:true,brief:{}},
+  {name:'Bedroom 2',nickname:'',w:'12',l:'13',unit:'ft',ren:false,brief:{}},
+  {name:'Kitchen',nickname:'',w:'9',l:'11',unit:'ft',ren:true,brief:{}},
+  {name:'Master Bathroom',nickname:'',w:'6',l:'8',unit:'ft',ren:false,brief:{}},
+  {name:'Dining Area',nickname:'',w:'10',l:'12',unit:'ft',ren:false,brief:{}},
+  {name:'Balcony',nickname:'',w:'5',l:'14',unit:'ft',ren:false,brief:{}},
 ];}
 
 /* Step 2 — Rooms */
@@ -3466,17 +3603,40 @@ function uncheckAll(){rooms.forEach((_,i)=>rooms[i].ren=false);renderRooms();}
 function renderRooms(){const g=document.getElementById('roomsGrid');g.innerHTML='';rooms.forEach((r,i)=>g.appendChild(mkRC(r,i)));}
 function mkRC(r,i){
   const d=document.createElement('div');d.className='rc'+(r.ren?' ren':' exp');d.id='rc'+i;
-  d.innerHTML=`<div class="rc-hd"><div class="rc-ico">${ricon(r.name)}</div><div class="rc-num">Room ${i+1}</div></div>
+  d.innerHTML=`
+  <div class="rc-hd">
+    <div class="rc-ico" id="rcico${i}">${ricon(r.name)}</div>
+    <div style="flex:1;min-width:0">
+      <div class="rc-num">Room ${i+1}</div>
+      <div id="rcdisplay${i}" style="font-size:.82rem;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.nickname||r.name}</div>
+    </div>
+    <button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.7rem;padding:4px" onclick="rmRoom(${i})" title="Remove room">✕</button>
+  </div>
   <div class="rc-body">
-    <div><label class="rlbl">Name</label><input class="ri" value="${r.name}" onchange="rooms[${i}].name=this.value"></div>
+    <div>
+      <label class="rlbl">Room Type</label>
+      <input class="ri" value="${r.name}" placeholder="e.g. Living Room"
+        onchange="rooms[${i}].name=this.value;
+          document.getElementById('rcico${i}').textContent=ricon(this.value);
+          if(!rooms[${i}].nickname) document.getElementById('rcdisplay${i}').textContent=this.value;">
+    </div>
+    <div>
+      <label class="rlbl" style="display:flex;align-items:center;gap:5px">
+        Custom Name
+        <span style="font-size:.58rem;color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0">(optional — e.g. Mother's Room, Kids' Play Area)</span>
+      </label>
+      <input class="ri" value="${r.nickname||''}" placeholder="Give this room a personal name…"
+        onchange="rooms[${i}].nickname=this.value.trim();
+          document.getElementById('rcdisplay${i}').textContent=this.value.trim()||rooms[${i}].name;">
+    </div>
     <div><label class="rlbl">Dimensions</label><div class="rdims"><input class="ri" value="${r.w||''}" placeholder="W" onchange="rooms[${i}].w=this.value"><span class="rx">×</span><input class="ri" value="${r.l||''}" placeholder="L" onchange="rooms[${i}].l=this.value"></div></div>
-    <div style="display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:5px"><label class="rlbl" style="margin:0">Unit</label><select class="ri" style="width:64px" onchange="rooms[${i}].unit=this.value"><option ${r.unit==='ft'?'selected':''}>ft</option><option ${r.unit==='m'?'selected':''}>m</option></select></div><button style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.72rem" onclick="rmRoom(${i})" onmouseover="this.style.color='var(--rust)'" onmouseout="this.style.color='var(--muted2)'">✕</button></div>
+    <div style="display:flex;align-items:center;gap:5px"><label class="rlbl" style="margin:0">Unit</label><select class="ri" style="width:64px" onchange="rooms[${i}].unit=this.value"><option ${r.unit==='ft'?'selected':''}>ft</option><option ${r.unit==='m'?'selected':''}>m</option></select></div>
   </div>
   <div class="rc-ft"><div class="rtog ${r.ren?'chk':''}" id="rtog${i}" onclick="togRen(${i})"><div class="rtbox">${r.ren?'✓':''}</div><span class="rtlbl">${r.ren?'Renovating':'Explore only'}</span></div></div>`;
   return d;
 }
 function togRen(i){rooms[i].ren=!rooms[i].ren;const c=document.getElementById('rc'+i);c.classList.toggle('ren',rooms[i].ren);c.classList.toggle('exp',!rooms[i].ren);const t=document.getElementById('rtog'+i);t.classList.toggle('chk',rooms[i].ren);t.querySelector('.rtbox').textContent=rooms[i].ren?'✓':'';t.querySelector('.rtlbl').textContent=rooms[i].ren?'Renovating':'Explore only';}
-function addRoom(){rooms.push({name:'New Room',w:'',l:'',unit:'ft',ren:true,brief:{}});renderRooms();}
+function addRoom(){rooms.push({name:'New Room',nickname:'',w:'',l:'',unit:'ft',ren:true,brief:{}});renderRooms();}
 function rmRoom(i){rooms.splice(i,1);renderRooms();}
 
 /* Step 3 — Brief */
@@ -3491,7 +3651,7 @@ function buildRoomBriefs(){
     card.innerHTML=`
       <div class="rbch" onclick="togRBC(${i})">
         <span class="rbc-emo">${ricon(r.name)}</span>
-        <span class="rbc-nm">${r.name}</span>
+        <span class="rbc-nm">${r.nickname||r.name}</span>
         ${sz?`<span class="rbc-sz">${sz}</span>`:''}
         <span class="rbc-tag">📸 3 photos</span>
         <span class="rbc-arr" id="rbc-arr-${i}">▾</span>
@@ -3554,27 +3714,55 @@ const VIEW_LABELS=['Wide View','Room Detail','Style Close-up'];
 let expShown=new Set();
 
 async function showInspo(){
-  setStep(4);
-  document.getElementById('genSpin').style.display='block';
-  document.getElementById('aiRes').style.display='none';
-  document.getElementById('sp4wf').style.display='none';
-  rooms.forEach((r,i)=>{if(r.ren)rooms[i].brief=readBrief(i);});
-  const dots=['gd1','gd2','gd3','gd4'];
-  dots.forEach(id=>document.getElementById(id).classList.remove('act','done'));
-  document.getElementById('gd1').classList.add('act');
-  let di=0;
-  const iv=setInterval(()=>{
-    document.getElementById(dots[di]).classList.remove('act');document.getElementById(dots[di]).classList.add('done');di++;
-    if(di<dots.length)document.getElementById(dots[di]).classList.add('act');else clearInterval(iv);
-  },380);
-  await sleep(1700);clearInterval(iv);
-  dots.forEach(d=>{document.getElementById(d).classList.remove('act');document.getElementById(d).classList.add('done');});
-  buildBoard();
-  document.getElementById('genSpin').style.display='none';
-  document.getElementById('aiRes').style.display='block';
-  document.getElementById('sp4wf').style.display='flex';
-  expShown.clear();
-  document.getElementById('total-count').textContent=rooms.filter(r=>r.ren).length*3;
+  // Read brief from all rooms
+  rooms.forEach((r,i)=>{ if(r.ren) rooms[i].brief=readBrief(i); });
+
+  // Collect styles from brief
+  const styles = [...new Set(rooms.filter(r=>r.ren&&r.brief?.style).map(r=>r.brief.style))];
+  const firstStyle = styles[0] || '';
+  const roomNames = rooms.filter(r=>r.ren).map(r=>r.nickname||r.name).join(', ');
+
+  // Save project first so rooms are stored
+  try{
+    const allProjs = RH.getProjs();
+    const projIdx = allProjs.findIndex(p=>p.id===wizProj.id);
+    if(projIdx>-1 && rooms.length){
+      allProjs[projIdx].sections = rooms.map(r=>(r.nickname||r.name));
+      allProjs[projIdx].rooms = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
+      RH.saveProjs(allProjs);
+    }
+  }catch(e){}
+
+  // Decide which tab: if curated library has 50+ photos → Curated, else Web Search
+  const curatedCount = ADMIN_CURATED.totalCount();
+  const goToCurated = curatedCount >= 50;
+
+  // Navigate to Image Library
+  goHome();
+  setTimeout(()=>{
+    openLibrary();
+    setTimeout(()=>{
+      if(goToCurated){
+        libSwitchTab('curated');
+        // Pre-fill search with style from brief
+        if(firstStyle){
+          const q = document.getElementById('lib-q');
+          if(q){ q.value=firstStyle; libFilter(); }
+        }
+        toast(`✦ ${curatedCount} curated photos — browsing ${firstStyle||roomNames}`);
+      } else {
+        libSwitchTab('web');
+        // Pre-fill Pexels search with room + style
+        const searchTerm = [firstStyle, roomNames].filter(Boolean).join(' ');
+        const pexQ = document.getElementById('pexels-q');
+        if(pexQ && searchTerm){
+          pexQ.value = searchTerm;
+          pexelsSearch();
+        }
+        toast(`🌐 Searching for "${searchTerm}" inspiration`);
+      }
+    }, 200);
+  }, 300);
 }
 
 function buildBoard(){
@@ -3594,8 +3782,8 @@ function buildBoard(){
 
   // Scope chips
   let sc=`<div class="scope-row"><div class="scope-row-lbl">Project Scope</div><div class="scope-chips">`;
-  ren.forEach(r=>sc+=`<div class="schip-r ren">${ricon(r.name)} ${r.name} <span style="opacity:.6;font-size:.6rem">3 photos</span></div>`);
-  exp.forEach(r=>sc+=`<div class="schip-r exp">${ricon(r.name)} ${r.name}</div>`);
+  ren.forEach(r=>sc+=`<div class="schip-r ren">${ricon(r.name)} ${r.nickname||r.name} <span style="opacity:.6;font-size:.6rem">3 photos</span></div>`);
+  exp.forEach(r=>sc+=`<div class="schip-r exp">${ricon(r.name)} ${r.nickname||r.name}</div>`);
   el.innerHTML+=sc+'</div></div>';
 
   // Room sections
@@ -3606,15 +3794,19 @@ function buildBoard(){
     const sz=r.w&&r.l?`${r.w}×${r.l} ${r.unit}`:'';
     const styleLabel=brief.style||(gStyles[0]?gStyles[0][0].toUpperCase()+gStyles[0].slice(1):'Contemporary');
     const sec=document.createElement('div');sec.className='room-result';
+    const displayName = r.nickname||r.name;
     sec.innerHTML=`<div class="rr-hd">
       <div class="rr-emo">${ricon(r.name)}</div>
-      <div class="rr-name">${r.name}</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div class="rr-name">${displayName}</div>
+        ${r.nickname?`<div style="font-size:.62rem;color:rgba(255,255,255,.45);font-weight:300">${r.name}</div>`:''}
+      </div>
       ${sz?`<span class="rr-sz">${sz}</span>`:''}
       <span class="rr-badge">${styleLabel}</span>
       <button class="regen-room" onclick="reshuffleRoom(${rooms.indexOf(r)},${ri},this)">↺ Reshuffle</button>
     </div>
     <div class="trio" id="trio-${ri}">
-      ${imgs.map((img,vi)=>imgCard(img,r.name,vi)).join('')}
+      ${imgs.map((img,vi)=>imgCard(img,displayName,vi)).join('')}
     </div>`;
     el.appendChild(sec);
   });
@@ -3627,7 +3819,7 @@ function buildBoard(){
       <div class="ex-btns">${exp.map((r,ei)=>`
         <button class="ex-btn" id="exbtn-${ei}" onclick="toggleExplore(${ei},'${r.name.replace(/'/,"\'")}')">
           <span class="ex-btn-ico">${ricon(r.name)}</span>
-          <div style="flex:1;min-width:0"><div class="ex-btn-name">${r.name}</div><div class="ex-btn-hint" id="exhint-${ei}">Show 3 photos →</div></div>
+          <div style="flex:1;min-width:0"><div class="ex-btn-name">${r.nickname||r.name}</div><div class="ex-btn-hint" id="exhint-${ei}">Show 3 photos →</div></div>
           <span id="exarr-${ei}">→</span>
         </button>`).join('')}</div>
       ${exp.map((_,ei)=>`<div class="ex-gallery" id="exgal-${ei}"><div class="trio" id="exgrid-${ei}"></div></div>`).join('')}`;
@@ -3661,8 +3853,8 @@ function reshuffleRoom(roomIdx,ri,btn){
   const styles=[...(brief.style?[brief.style.toLowerCase()]:gStyles)];
   const imgs=getImages(r.name,styles,brief.mood||'',3,shuffleOff+ri+3);
   const trio=document.getElementById('trio-'+ri);
-  if(trio) trio.innerHTML=imgs.map((img,vi)=>imgCard(img,r.name,vi)).join('');
-  toast('↺ '+r.name+' refreshed');
+  if(trio) trio.innerHTML=imgs.map((img,vi)=>imgCard(img,r.nickname||r.name,vi)).join('');
+  toast('↺ '+(r.nickname||r.name)+' refreshed');
 }
 function toggleExplore(ei,roomName){
   const btn=document.getElementById('exbtn-'+ei);
@@ -3690,7 +3882,19 @@ function closeLB(){document.getElementById('lb').classList.remove('open');docume
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 let _tt;
 function toast(msg){const e=document.getElementById('toastEl');e.textContent=msg;e.classList.add('show');clearTimeout(_tt);_tt=setTimeout(()=>e.classList.remove('show'),3500);}
-function saveFinish(){toast('✦ Project saved!');setTimeout(goHome,1200);}
+function saveFinish(){
+  try{
+    const allProjs = RH.getProjs();
+    const projIdx = allProjs.findIndex(p=>p.id===wizProj.id);
+    if(projIdx>-1 && rooms.length){
+      allProjs[projIdx].sections = rooms.map(r=>(r.nickname||r.name));
+      allProjs[projIdx].rooms = rooms.map(r=>({name:r.name,nickname:r.nickname||'',w:r.w,l:r.l,unit:r.unit,ren:r.ren}));
+      RH.saveProjs(allProjs);
+    }
+  }catch(e){ console.warn('Could not save rooms to project:', e); }
+  toast('✦ Project saved!');
+  setTimeout(goHome, 1200);
+}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeLB();['modal-rh-upload','modal-ann','modal-share'].forEach(id=>ph2Close(id));}});
 
 /* ═══════════════════════════════════════════════════════════════════════════════
@@ -3794,14 +3998,12 @@ function openRendersHub(){
   document.getElementById('mainNav').style.display='';
   bnSetActive('bn-renders');
 
-  // Build project selector from PROJS (Phase 1) + rh_projects (localStorage)
+  // Build project selector from RH projects only (all projects now saved there)
   const sel = document.getElementById('rh-proj-sel');
-  const rhProjs = RH.getProjs();
-  const allProjs = [
-    ...PROJS.map(p=>({id:p.id, name:p.name, client:p.loc, sections:['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'], shareToken:p.id+'_token', type:p.type, icon:p.icon})),
-    ...rhProjs
-  ];
-  sel.innerHTML = allProjs.map(p=>`<option value="${p.id}">${p.icon||'🏠'} ${p.name}</option>`).join('');
+  const allProjs = RH.getProjs();
+  sel.innerHTML = allProjs.length
+    ? allProjs.map(p=>`<option value="${p.id}">${p.icon||'🏠'} ${p.name}</option>`).join('')
+    : '<option value="">— No projects yet —</option>';
 
   // Load first / previous
   if(!rhProjId && allProjs.length) rhProjId = allProjs[0].id;
@@ -3821,39 +4023,13 @@ function loadRenderProject(id){
 }
 
 function getAllRHProjs(){
-  // Merge in-memory PROJS with persisted RH projects, deduplicated by id
-  // Always compute shareToken = id + '_share' so client portal links work even on fresh loads
-  const rhSaved = RH.getProjs();
-  const allIds = new Set();
-  const result = [];
-
-  // In-memory PROJS first (session creations)
-  PROJS.forEach(p=>{
-    if(!allIds.has(p.id)){
-      allIds.add(p.id);
-      result.push({
-        ...p,
-        shareToken: p.shareToken || (p.id+'_share'),
-        sections: p.sections || ['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
-        client: p.client || p.loc || '—',
-      });
-    }
-  });
-
-  // Persisted RH projects
-  rhSaved.forEach(p=>{
-    if(!allIds.has(p.id)){
-      allIds.add(p.id);
-      result.push({
-        ...p,
-        shareToken: p.shareToken || (p.id+'_share'),
-        sections: p.sections || ['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
-        client: p.client || p.loc || '—',
-      });
-    }
-  });
-
-  return result;
+  // All projects live in RH (localStorage) — no in-memory PROJS merge needed
+  return RH.getProjs().map(p=>({
+    ...p,
+    shareToken: p.shareToken || (p.id+'_share'),
+    sections: p.sections || ['Living Room','Master Bedroom','Kitchen','Bathroom','Dining Area','Balcony'],
+    client: p.client || p.loc || '—',
+  }));
 }
 
 async function refreshRH(){
@@ -4100,15 +4276,26 @@ function rhuHandleFiles(files){
   if(!toRead.length){toast('Please select image files');return;}
   rhuFiles=[];
   const thumbs=document.getElementById('rhu-thumbs'); thumbs.innerHTML='';
+  const proj = getAllRHProjs().find(p=>p.id===rhProjId);
+  const sections = proj?.sections || [];
   let loaded=0;
-  toRead.forEach(f=>{
+  toRead.forEach((f,fi)=>{
     const reader=new FileReader();
     reader.onload=e2=>{
-      rhuFiles.push({name:f.name, dataUrl:e2.target.result});
-      const img=document.createElement('img');
-      img.src=e2.target.result;
-      img.style='width:65px;height:48px;object-fit:cover;border-radius:5px;border:1px solid var(--border)';
-      thumbs.appendChild(img);
+      rhuFiles.push({name:f.name, dataUrl:e2.target.result, section: document.getElementById('rhu-section')?.value || sections[0] || ''});
+      const defaultSec = document.getElementById('rhu-section')?.value || sections[0] || '';
+      const sectionOpts = sections.map(s=>`<option value="${s}" ${s===defaultSec?'selected':''}>${ricon(s)} ${s}</option>`).join('');
+      const card = document.createElement('div');
+      card.id = 'rhu-card-'+fi;
+      card.style.cssText = 'display:flex;gap:10px;align-items:center;padding:8px;background:var(--bg2);border-radius:9px;margin-bottom:6px;';
+      card.innerHTML = `
+        <img src="${e2.target.result}" style="width:60px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.69rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:4px">${f.name}</div>
+          <select class="bfs" style="font-size:.72rem;width:100%" onchange="rhuFiles[${fi}].section=this.value">${sectionOpts}</select>
+        </div>
+        <button onclick="rhuRemoveFile(${fi})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.8rem;flex-shrink:0">✕</button>`;
+      thumbs.appendChild(card);
       loaded++;
       document.getElementById('rhu-count').textContent=loaded;
       if(loaded===toRead.length){
@@ -4119,26 +4306,50 @@ function rhuHandleFiles(files){
     reader.readAsDataURL(f);
   });
 }
+
+function rhuRemoveFile(idx){
+  rhuFiles.splice(idx,1);
+  // Re-render thumbs
+  const proj = getAllRHProjs().find(p=>p.id===rhProjId);
+  // Simplest: re-trigger with remaining files by rebuilding
+  rhuHandleFiles(rhuFiles.map(f=>({type:'image/jpeg', name:f.name, _data:f.dataUrl})));
+  // Actually just re-render from rhuFiles
+  const thumbs=document.getElementById('rhu-thumbs'); thumbs.innerHTML='';
+  const sections = proj?.sections||[];
+  rhuFiles.forEach((f,fi)=>{
+    const defaultSec = document.getElementById('rhu-section')?.value || sections[0] || '';
+    const sectionOpts = sections.map(s=>`<option value="${s}" ${s===f.section?'selected':''}>${ricon(s)} ${s}</option>`).join('');
+    const card = document.createElement('div');
+    card.style.cssText='display:flex;gap:10px;align-items:center;padding:8px;background:var(--bg2);border-radius:9px;margin-bottom:6px;';
+    card.innerHTML=`<img src="${f.dataUrl}" style="width:60px;height:44px;object-fit:cover;border-radius:6px;flex-shrink:0"><div style="flex:1;min-width:0"><div style="font-size:.69rem;color:var(--muted);margin-bottom:4px">${f.name}</div><select class="bfs" style="font-size:.72rem;width:100%" onchange="rhuFiles[${fi}].section=this.value">${sectionOpts}</select></div><button onclick="rhuRemoveFile(${fi})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.8rem">✕</button>`;
+    thumbs.appendChild(card);
+  });
+  document.getElementById('rhu-count').textContent=rhuFiles.length;
+  if(!rhuFiles.length){ document.getElementById('rhu-preview').style.display='none'; document.getElementById('rhu-btn').disabled=true; }
+}
+
+function rhuUpdateAllSections(sec){
+  rhuFiles.forEach(f=>f.section=sec);
+  document.querySelectorAll('#rhu-thumbs select').forEach(sel=>sel.value=sec);
+}
+
 async function rhuConfirm(){
   if(!rhuFiles.length||!rhProjId)return;
-  const section=document.getElementById('rhu-section').value;
   const note=document.getElementById('rhu-note').value.trim();
   const proj = getAllBOQProjs().find(p=>p.id===rhProjId);
   let count=0;
   const addedImgs = [];
   for(const f of rhuFiles){
     const imgId = rhUid();
+    const section = f.section || document.getElementById('rhu-section').value;
     await RH.addImg({id:imgId, projectId:rhProjId, section, dataUrl:f.dataUrl,
       note:note||f.name.replace(/\.[^.]+$/,''), status:'pending', comments:[], uploadedAt:Date.now()});
     addedImgs.push({id:imgId, dataUrl:f.dataUrl});
     count++;
   }
   ph2Close('modal-rh-upload');
-  toast(`✦ ${count} image${count!==1?'s':''} added to ${section}`);
+  toast(`✦ ${count} image${count!==1?'s':''} added`);
   refreshRH();
-
-  // Auto-tag all uploaded renders immediately for Curated library
-  // (runs in background — doesn't block UI)
   setTimeout(async()=>{
     for(const img of addedImgs){
       await analyseAndStoreRender(img.id, rhProjId, proj?.name||'Project', img.dataUrl);
@@ -4243,6 +4454,14 @@ function openShareModal(){
   const url=location.origin+location.pathname+'#client/'+proj.shareToken;
   document.getElementById('share-url-inp').value=url;
   document.getElementById('modal-share').classList.add('open');
+  // Generate QR after modal opens
+  setTimeout(()=>generateQR(url,'share-qr-wrap',90), 200);
+}
+function shareViaWhatsApp(){
+  const url = document.getElementById('share-url-inp').value;
+  const proj = getAllRHProjs().find(p=>p.id===rhProjId);
+  const msg = encodeURIComponent('Hi! Please review your design renders here: '+url);
+  window.open('https://wa.me/?text='+msg,'_blank');
 }
 function copyShareLink(){ copyLink(document.getElementById('share-url-inp').value); }
 function copyLink(url){
@@ -4512,6 +4731,21 @@ function pexelsDemoGrid(q){
 
 // ── AI Render Analysis — when renders are uploaded, Claude analyses them ──────
 // Stored in localStorage: dm_render_tags: [{imgId, projId, projName, style, palette, mood, materials, dataUrl, analysedAt}]
+// ── ADMIN CURATED PHOTO LIBRARY ───────────────────────────────────────────────
+// Admin-added Pexels photos extend IMG_DB for all users. Stored globally (not per-user).
+const ADMIN_CURATED = {
+  get(){ try{ return JSON.parse(localStorage.getItem('dm_admin_curated')||'[]'); }catch{ return []; } },
+  save(a){ try{ localStorage.setItem('dm_admin_curated', JSON.stringify(a)); }catch(e){ toast('⚠️ Storage full'); } },
+  add(entry){ const all=this.get(); all.unshift(entry); this.save(all); },
+  remove(id){ this.save(this.get().filter(p=>p.i!==id)); },
+  count(){ return this.get().length; },
+  // Total curated = built-in IMG_DB + admin added
+  totalCount(){ return IMG_DB.length + this.get().length; },
+};
+
+// Get combined IMG_DB + admin curated for image matching
+function getFullImgDB(){ return [...IMG_DB, ...ADMIN_CURATED.get()]; }
+
 const RENDER_TAGS = {
   get(){ return LS.get('render_tags', []); },
   save(a){ LS.set('render_tags', a); },
@@ -4519,6 +4753,56 @@ const RENDER_TAGS = {
 };
 
 // ── Homepage Auth ─────────────────────────────────────────────────────────────
+
+// ── Screenshot / Share as Image (html2canvas) ─────────────────────────────────
+async function screenshotElement(elementId, filename){
+  if(typeof html2canvas === 'undefined'){
+    toast('Screenshot library loading… try again in a moment'); return;
+  }
+  const el = document.getElementById(elementId);
+  if(!el){ toast('Nothing to screenshot'); return; }
+  toast('📸 Capturing screenshot…');
+  try{
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#F7F4EF',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+    const link = document.createElement('a');
+    link.download = (filename||'designmind-export')+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('✅ Image saved!');
+  } catch(e){
+    console.error('Screenshot error:', e);
+    toast('Screenshot failed — try Print (Ctrl+P) instead');
+  }
+}
+
+async function screenshotAndShare(elementId, caption){
+  if(typeof html2canvas === 'undefined'){
+    toast('Screenshot library loading…'); return;
+  }
+  const el = document.getElementById(elementId);
+  if(!el){ toast('Nothing to capture'); return; }
+  try{
+    const canvas = await html2canvas(el, { backgroundColor:'#F7F4EF', scale:2, useCORS:true, logging:false });
+    canvas.toBlob(async blob=>{
+      if(navigator.share && navigator.canShare && navigator.canShare({files:[new File([blob],'design.png',{type:'image/png'})]})){
+        await navigator.share({ files:[new File([blob],'design.png',{type:'image/png'})], title:'DesignMind', text:caption||'' });
+      } else {
+        // Fallback: download
+        const link = document.createElement('a');
+        link.download = 'design-export.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        toast('✅ Image saved!');
+      }
+    }, 'image/png');
+  } catch(e){ toast('Could not share — try downloading instead'); }
+}
+
 function hpTab(tab){
   // Dismiss pending overlay if present so the forms are accessible again
   document.getElementById('hp-pending-overlay')?.remove();
@@ -4883,6 +5167,102 @@ function doResetPassword(){
 }
 
 
+// ── ONBOARDING FLOW (first-time users) ───────────────────────────────────────
+const ONBOARDING_STEPS = [
+  {
+    icon:'🏡',
+    title:'Welcome to DesignMind',
+    desc:'India\'s interior design platform — built for how you actually work. Let\'s set up your account in 4 quick steps.',
+    action: null,
+    actionLabel: 'Get Started →'
+  },
+  {
+    icon:'👤',
+    title:'Complete your profile',
+    desc:'Add your studio name, photo, and contact details. Your profile powers your portfolio and client communications.',
+    action: ()=>{ document.getElementById('onboarding-modal')?.remove(); openProfile(); },
+    actionLabel: 'Go to Profile →',
+    skipLabel: 'Do this later'
+  },
+  {
+    icon:'🏠',
+    title:'Create your first project',
+    desc:'Add a project — give it a name, type, and client. Your BOQ, renders, snag list and to-dos all live inside a project.',
+    action: ()=>{ document.getElementById('onboarding-modal')?.remove(); openModal(); },
+    actionLabel: '+ Create Project →',
+    skipLabel: 'Skip for now'
+  },
+  {
+    icon:'📋',
+    title:'Generate a BOQ template',
+    desc:'Once you have a project, go to BOQ & Costs → ✦ Generate BOQ Template. It builds a full room-by-room bill with Indian market rates in seconds.',
+    action: null,
+    actionLabel: 'Got it — Let\'s go! 🎉',
+    final: true
+  }
+];
+
+let _onboardStep = 0;
+
+function showOnboarding(){
+  _onboardStep = 0;
+  renderOnboardingStep();
+}
+
+function renderOnboardingStep(){
+  document.getElementById('onboarding-modal')?.remove();
+  const step = ONBOARDING_STEPS[_onboardStep];
+  if(!step) return;
+
+  const m = document.createElement('div');
+  m.id = 'onboarding-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.75);backdrop-filter:blur(10px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const dots = ONBOARDING_STEPS.map((_,i)=>`<div style="width:${i===_onboardStep?'20px':'7px'};height:7px;border-radius:100px;background:${i===_onboardStep?'var(--gold)':'rgba(184,136,74,.3)'};transition:all .3s"></div>`).join('');
+
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:24px;padding:36px 32px;max-width:420px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(28,26,23,.4)">
+      <div style="font-size:3.5rem;margin-bottom:16px">${step.icon}</div>
+      <div style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:300;margin-bottom:10px;color:var(--ink)">${step.title}</div>
+      <div style="font-size:.82rem;color:var(--muted);line-height:1.8;margin-bottom:28px">${step.desc}</div>
+      <div style="display:flex;justify-content:center;gap:6px;margin-bottom:24px">${dots}</div>
+      <button class="btn" style="width:100%;background:var(--ink);margin-bottom:${step.skipLabel?'10px':'0'}" onclick="onboardAction()">
+        ${step.actionLabel}
+      </button>
+      ${step.skipLabel ? `<button class="btn-ghost" style="width:100%;font-size:.76rem" onclick="onboardSkip()">${step.skipLabel}</button>` : ''}
+      ${_onboardStep>0 ? `<button style="background:none;border:none;font-size:.7rem;color:var(--muted2);cursor:pointer;margin-top:8px" onclick="document.getElementById('onboarding-modal')?.remove();LS.set('onboarding_done',true)">Skip all setup</button>` : ''}
+    </div>`;
+
+  document.body.appendChild(m);
+}
+
+function onboardAction(){
+  const step = ONBOARDING_STEPS[_onboardStep];
+  if(step.final){
+    document.getElementById('onboarding-modal')?.remove();
+    LS.set('onboarding_done', true);
+    toast('🎉 You\'re all set! DesignMind is ready.');
+    return;
+  }
+  if(step.action){
+    step.action();
+    LS.set('onboarding_done', true);
+    return;
+  }
+  _onboardStep++;
+  renderOnboardingStep();
+}
+
+function onboardSkip(){
+  _onboardStep++;
+  if(_onboardStep >= ONBOARDING_STEPS.length){
+    document.getElementById('onboarding-modal')?.remove();
+    LS.set('onboarding_done', true);
+  } else {
+    renderOnboardingStep();
+  }
+}
+
 function hpSignOut(){
   // confirm() can be blocked in some browsers — use custom modal instead
   const modal = document.createElement('div');
@@ -4977,12 +5357,10 @@ function hpEnterApp(isDemo){
   IS_DEMO = !!isDemo;
   const home=document.getElementById('s-home');
   home.style.opacity='0'; home.style.transition='opacity .4s';
-  // Always restore main nav
   const mn = document.getElementById('mainNav');
   if(mn) mn.style.display='';
   const cb = document.getElementById('clientBanner');
   if(cb) cb.style.display='none';
-  // Show bottom nav on mobile (CSS only shows it on ≤600px via the .visible class)
   const bnav = document.getElementById('bottomNav');
   if(bnav) bnav.classList.add('visible');
   setTimeout(()=>{
@@ -4992,12 +5370,16 @@ function hpEnterApp(isDemo){
     expRender();
     gtdRender();
     scheduleNotifTimers();
+    // Show onboarding for first-time users (not demo)
+    if(!isDemo && !LS.get('onboarding_done') && !RH.getProjs().length){
+      setTimeout(showOnboarding, 800);
+    }
   }, 400);
 }
 
 // ── DYNAMIC PROJECT STATS ─────────────────────────────────────────────────────
 function updateProjStats(){
-  const allProjs=[...PROJS,...RH.getProjs()];
+  const allProjs=RH.getProjs();
   const realIds = new Set(allProjs.map(p=>p.id));
 
   // Load snag projects and filter to only real ones
@@ -5687,6 +6069,67 @@ function openProfile(){
   }
 }
 
+// ── ADMIN CURATED LIBRARY MANAGEMENT ─────────────────────────────────────────
+function adminAddCuratedPhoto(){
+  const idVal = document.getElementById('admin-pexels-id').value.trim();
+  const id = parseInt(idVal);
+  if(!id || isNaN(id)){ toast('Enter a valid Pexels photo ID'); return; }
+  const room   = document.getElementById('admin-photo-room').value;
+  const mood   = document.getElementById('admin-photo-mood').value;
+  const styles = document.getElementById('admin-photo-styles').value.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const tags   = document.getElementById('admin-photo-tags').value.split(',').map(t=>t.trim().toLowerCase()).filter(Boolean);
+  if(!styles.length){ toast('Add at least one style (e.g. contemporary)'); return; }
+
+  const existing = ADMIN_CURATED.get();
+  if(existing.some(p=>p.i===id)){ toast('This photo is already in the library'); return; }
+
+  // Also check IMG_DB
+  if(IMG_DB.some(p=>p.i===id)){ toast('This photo is already in the built-in library'); return; }
+
+  const entry = { i:id, r:room, s:styles, m:mood, t:tags, u: Date.now(), admin:true };
+  ADMIN_CURATED.add(entry);
+
+  // Clear inputs
+  document.getElementById('admin-pexels-id').value = '';
+  document.getElementById('admin-photo-styles').value = '';
+  document.getElementById('admin-photo-tags').value = '';
+
+  adminRenderCuratedPreview();
+  const total = ADMIN_CURATED.totalCount();
+  toast(`✅ Photo added! Curated library: ${total} photos${total>=50?' — Inspiration now goes to Curated tab ✦':''}`);
+}
+
+function adminRenderCuratedPreview(){
+  const photos = ADMIN_CURATED.get();
+  const countEl = document.getElementById('admin-curated-count');
+  const total = ADMIN_CURATED.totalCount();
+  if(countEl) countEl.textContent = `${photos.length} added · ${total} total${total>=50?' ✦ Curated active':''}`;
+
+  const preview = document.getElementById('admin-curated-preview');
+  if(!preview) return;
+  if(!photos.length){
+    preview.innerHTML = `<div style="grid-column:1/-1;font-size:.67rem;color:var(--muted2);padding:8px 0">No custom photos added yet.</div>`;
+    return;
+  }
+  preview.innerHTML = photos.slice(0,12).map(p=>`
+    <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1">
+      <img src="https://images.pexels.com/photos/${p.i}/pexels-photo-${p.i}.jpeg?auto=compress&cs=tinysrgb&w=150&h=150&fit=crop"
+        style="width:100%;height:100%;object-fit:cover" onerror="this.src='';this.parentElement.style.background='var(--bg2)'">
+      <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);padding:3px 5px;font-size:.52rem;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.r} · ${p.s[0]||''}</div>
+      <button onclick="adminRemoveCuratedPhoto(${p.i})"
+        style="position:absolute;top:3px;right:3px;background:rgba(168,77,58,.85);border:none;border-radius:50%;width:18px;height:18px;color:white;font-size:.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">✕</button>
+    </div>`).join('');
+  if(photos.length > 12){
+    preview.innerHTML += `<div style="grid-column:1/-1;font-size:.67rem;color:var(--muted);text-align:center;padding:4px">+${photos.length-12} more photos</div>`;
+  }
+}
+
+function adminRemoveCuratedPhoto(id){
+  ADMIN_CURATED.remove(id);
+  adminRenderCuratedPreview();
+  toast('Photo removed from curated library');
+}
+
 function devRefreshUsers(){
   const prof  = PROFDB.get();
   const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
@@ -5736,6 +6179,8 @@ function devRefreshUsers(){
         ${l.companyEmail?`<div style="font-size:.65rem;color:var(--blue)">${l.companyEmail}</div>`:''}
       </div>`).join('');
   }
+  // Refresh curated library preview
+  adminRenderCuratedPreview();
 }
 
 // ── BLOCK / REMOVE USER ───────────────────────────────────────────────────────
@@ -6124,6 +6569,180 @@ async function saveProfile(){
 let _ppEditId = null;
 let _ppPhotos = [];
 
+// ── ANALYTICS SCREEN ─────────────────────────────────────────────────────────
+let _chartInstances = {};
+
+function openAnalytics(){
+  const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
+  const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
+  showScr('s-analytics');
+  document.querySelectorAll('.nlink').forEach(n=>n.classList.remove('active'));
+  try{ document.querySelector('[onclick="openAnalytics()"]')?.classList.add('active'); }catch(e){}
+  bnSetActive('bn-projects');
+  renderAnalytics();
+}
+
+function renderAnalytics(){
+  const allProjs = RH.getProjs();
+  const expenses = EXPDB.get();
+
+  // ── KPI Cards ─────────────────────────────────────────────────────────────
+  const totalBOQ   = allProjs.reduce((s,p)=>{ try{ return s+BOQDB.getData(p.id).items.reduce((ss,i)=>ss+(parseFloat(i.total)||0),0); }catch{ return s; } }, 0);
+  const totalPaid  = allProjs.reduce((s,p)=>{ try{ return s+BOQDB.getData(p.id).items.reduce((ss,i)=>ss+(parseFloat(i.cost)||0),0); }catch{ return s; } }, 0);
+  const totalIncome= expenses.filter(e=>e.type==='income').reduce((s,e)=>s+e.amount,0);
+  const totalExp   = expenses.filter(e=>e.type==='expense').reduce((s,e)=>s+e.amount,0);
+  const activeProjs= allProjs.filter(p=>!p.completed).length;
+  const doneProjs  = allProjs.filter(p=>p.completed).length;
+
+  const kpis = [
+    { label:'Total BOQ Value',   val:'₹'+fmtFull(totalBOQ),   color:'var(--gold)',  icon:'📋' },
+    { label:'Collected',         val:'₹'+fmtFull(totalPaid),  color:'var(--sage)',  icon:'✅' },
+    { label:'Balance Due',       val:'₹'+fmtFull(Math.max(0,totalBOQ-totalPaid)), color:'var(--rust)', icon:'⏳' },
+    { label:'Total Income',      val:'₹'+fmtFull(totalIncome),color:'var(--sage)',  icon:'💰' },
+    { label:'Total Expenses',    val:'₹'+fmtFull(totalExp),   color:'var(--rust)',  icon:'💸' },
+    { label:'Net P&L',           val:'₹'+fmtFull(totalIncome-totalExp), color:totalIncome>=totalExp?'var(--sage)':'var(--rust)', icon:'📈' },
+    { label:'Active Projects',   val:activeProjs,              color:'var(--blue)',  icon:'🏗' },
+    { label:'Completed',         val:doneProjs,                color:'var(--sage)',  icon:'🏠' },
+  ];
+
+  document.getElementById('analytics-kpis').innerHTML = kpis.map(k=>`
+    <div style="background:#FDFCFA;border:1px solid var(--border);border-radius:12px;padding:16px 18px">
+      <div style="font-size:1.3rem;margin-bottom:6px">${k.icon}</div>
+      <div style="font-size:1.25rem;font-weight:700;color:${k.color};margin-bottom:3px">${k.val}</div>
+      <div style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.8px">${k.label}</div>
+    </div>`).join('');
+
+  // ── Load Chart.js then render charts ──────────────────────────────────────
+  if(typeof Chart === 'undefined'){
+    // Dynamically load Chart.js if not present
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    script.onload = ()=> renderAnalyticsCharts(allProjs, expenses);
+    document.head.appendChild(script);
+  } else {
+    renderAnalyticsCharts(allProjs, expenses);
+  }
+
+  // Project summary table
+  renderAnalyticsProjTable(allProjs);
+}
+
+function renderAnalyticsCharts(allProjs, expenses){
+  // Destroy existing charts
+  Object.values(_chartInstances).forEach(c=>{ try{ c.destroy(); }catch{} });
+  _chartInstances = {};
+
+  const COLORS = ['#B8884A','#5E7260','#3A6B8A','#A84D3A','#7B6E5A','#4A7A5E','#8A6B3A','#6A4A8A'];
+
+  // Chart 1: Revenue by project (bar)
+  const projLabels = allProjs.slice(0,8).map(p=>p.name.length>15?p.name.slice(0,13)+'…':p.name);
+  const projTotals = allProjs.slice(0,8).map(p=>{ try{ return BOQDB.getData(p.id).items.reduce((s,i)=>s+(parseFloat(i.total)||0),0); }catch{ return 0; } });
+  const projPaid   = allProjs.slice(0,8).map(p=>{ try{ return BOQDB.getData(p.id).items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0); }catch{ return 0; } });
+
+  const ctx1 = document.getElementById('chart-revenue');
+  if(ctx1 && projLabels.length){
+    _chartInstances.revenue = new Chart(ctx1, {
+      type:'bar',
+      data:{ labels:projLabels, datasets:[
+        { label:'Estimate', data:projTotals, backgroundColor:'rgba(184,136,74,.25)', borderColor:'#B8884A', borderWidth:2, borderRadius:4 },
+        { label:'Paid',     data:projPaid,   backgroundColor:'rgba(94,114,96,.35)',  borderColor:'#5E7260', borderWidth:2, borderRadius:4 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:12 } } }, scales:{ y:{ ticks:{ callback:v=>'₹'+fmtFull(v), font:{size:10} }, grid:{ color:'rgba(0,0,0,.05)' } }, x:{ ticks:{ font:{size:10} } } } }
+    });
+  } else if(ctx1){ ctx1.parentElement.innerHTML += '<div style="text-align:center;padding:40px;color:var(--muted);font-size:.8rem">No BOQ data yet</div>'; }
+
+  // Chart 2: BOQ status doughnut
+  const allItems = allProjs.flatMap(p=>{ try{ return BOQDB.getData(p.id).items; }catch{ return []; } });
+  const statusCount = { Pending:0, 'Order Placed':0, Delivered:0, Cancelled:0 };
+  allItems.forEach(i=>{ if(statusCount[i.status]!==undefined) statusCount[i.status]++; });
+  const ctx2 = document.getElementById('chart-status');
+  if(ctx2 && allItems.length){
+    _chartInstances.status = new Chart(ctx2, {
+      type:'doughnut',
+      data:{ labels:Object.keys(statusCount), datasets:[{ data:Object.values(statusCount), backgroundColor:['#B8884A','#3A6B8A','#5E7260','#A84D3A'], borderWidth:0, hoverOffset:6 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:12 } } } }
+    });
+  } else if(ctx2){ ctx2.parentElement.innerHTML += '<div style="text-align:center;padding:40px;color:var(--muted);font-size:.8rem">No BOQ items yet</div>'; }
+
+  // Chart 3: Income vs Expenses (monthly, last 6 months)
+  const months = [];
+  const incomeByMonth = [], expByMonth = [];
+  for(let i=5;i>=0;i--){
+    const d = new Date(); d.setMonth(d.getMonth()-i);
+    const label = d.toLocaleDateString('en-IN',{month:'short',year:'2-digit'});
+    months.push(label);
+    const mStr = d.toISOString().slice(0,7); // YYYY-MM
+    incomeByMonth.push(expenses.filter(e=>e.type==='income'&&(e.createdAt?new Date(e.createdAt).toISOString().slice(0,7)===mStr:false)).reduce((s,e)=>s+e.amount,0));
+    expByMonth.push(expenses.filter(e=>e.type==='expense'&&(e.createdAt?new Date(e.createdAt).toISOString().slice(0,7)===mStr:false)).reduce((s,e)=>s+e.amount,0));
+  }
+  const ctx3 = document.getElementById('chart-cashflow');
+  if(ctx3){
+    _chartInstances.cashflow = new Chart(ctx3, {
+      type:'bar',
+      data:{ labels:months, datasets:[
+        { label:'Income',  data:incomeByMonth, backgroundColor:'rgba(94,114,96,.35)', borderColor:'#5E7260', borderWidth:2, borderRadius:4 },
+        { label:'Expense', data:expByMonth,    backgroundColor:'rgba(168,77,58,.25)', borderColor:'#A84D3A', borderWidth:2, borderRadius:4 },
+      ]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:12 } } }, scales:{ y:{ ticks:{ callback:v=>'₹'+fmtFull(v), font:{size:10} }, grid:{ color:'rgba(0,0,0,.05)' } }, x:{ ticks:{ font:{size:10} } } } }
+    });
+  }
+
+  // Chart 4: Render approval rate (doughnut)
+  const renderTags = RENDER_TAGS.get();
+  const approved = renderTags.filter(r=>r.status==='approved').length;
+  const changes  = renderTags.filter(r=>r.status==='changes').length;
+  const pending  = renderTags.filter(r=>r.status==='pending'||!r.status).length;
+  const ctx4 = document.getElementById('chart-approvals');
+  if(ctx4 && renderTags.length){
+    _chartInstances.approvals = new Chart(ctx4, {
+      type:'doughnut',
+      data:{ labels:['Approved','Changes','Pending'], datasets:[{ data:[approved,changes,pending], backgroundColor:['#5E7260','#B8884A','#8C8479'], borderWidth:0, hoverOffset:6 }]},
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, boxWidth:12 } } } }
+    });
+  } else if(ctx4){ ctx4.parentElement.innerHTML += '<div style="text-align:center;padding:40px;color:var(--muted);font-size:.8rem">No renders uploaded yet</div>'; }
+}
+
+function renderAnalyticsProjTable(allProjs){
+  const wrap = document.getElementById('analytics-proj-table');
+  if(!wrap) return;
+  if(!allProjs.length){ wrap.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:.8rem">No projects yet</div>'; return; }
+
+  const rows = allProjs.map(p=>{
+    let est=0, paid=0, items=0;
+    try{ const d=BOQDB.getData(p.id); items=d.items.length; est=d.items.reduce((s,i)=>s+(parseFloat(i.total)||0),0); paid=d.items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0); }catch{}
+    const bal = Math.max(0,est-paid);
+    return `<tr style="border-top:1px solid var(--border)">
+      <td style="padding:10px 16px;font-weight:500">${p.icon||'🏠'} ${p.name}</td>
+      <td style="padding:10px;color:var(--muted);font-size:.75rem">${p.client||'—'}</td>
+      <td style="padding:10px;font-size:.75rem"><span style="background:${p.completed?'rgba(94,114,96,.1)':'rgba(184,136,74,.1)'};color:${p.completed?'#5E7260':'#B8884A'};border-radius:100px;padding:2px 9px;font-size:.65rem">${p.completed?'✓ Done':'Active'}</span></td>
+      <td style="padding:10px;text-align:right;font-size:.8rem">${items} items</td>
+      <td style="padding:10px;text-align:right;font-weight:500">₹${fmtFull(est)}</td>
+      <td style="padding:10px;text-align:right;color:#5E7260;font-weight:500">₹${fmtFull(paid)}</td>
+      <td style="padding:10px;text-align:right;color:${bal>0?'#A84D3A':'#5E7260'};font-weight:600">₹${fmtFull(bal)}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:.8rem">
+    <thead><tr style="background:var(--bg2)">
+      <th style="text-align:left;padding:10px 16px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Project</th>
+      <th style="text-align:left;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Client</th>
+      <th style="text-align:left;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Status</th>
+      <th style="text-align:right;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Items</th>
+      <th style="text-align:right;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Estimate</th>
+      <th style="text-align:right;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Paid</th>
+      <th style="text-align:right;padding:10px;font-size:.65rem;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);font-weight:600">Balance</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+// Add mobile CSS for analytics charts
+(function(){
+  const style = document.createElement('style');
+  style.textContent = '@media(max-width:600px){.analytics-charts-row{grid-template-columns:1fr!important;}}';
+  document.head.appendChild(style);
+})();
+
 function openPlugins(){
   const mn=document.getElementById('mainNav'); if(mn) mn.style.display='';
   const cb=document.getElementById('clientBanner'); if(cb) cb.style.display='none';
@@ -6288,6 +6907,7 @@ function openPortfolioShare(){
   const url = location.origin+location.pathname+'#portfolio/'+token;
   document.getElementById('port-share-url').value=url;
   document.getElementById('modal-port-share').classList.add('open');
+  setTimeout(()=>generateQR(url,'port-share-qr',80), 200);
 }
 function copyPortfolioLink(){ const url=document.getElementById('port-share-url').value; navigator.clipboard.writeText(url).then(()=>toast('🔗 Portfolio link copied!')).catch(()=>{const t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('🔗 Copied!');}); }
 function portShareWhatsApp(){ const url=encodeURIComponent(document.getElementById('port-share-url').value); const prof=PROFDB.get(); window.open('https://wa.me/?text='+encodeURIComponent('Hi! Please check out my interior design portfolio: ')+ url,'_blank'); }
@@ -6736,10 +7356,123 @@ function openProjDetail(proj){
   document.getElementById('pd-bud').textContent   = proj.bud||'—';
   document.getElementById('pd-phase').textContent = proj.phase||'Active';
   document.getElementById('pd-pct').textContent   = (proj.pct||0)+'%';
+  // Show client contact if available
+  if(proj.clientPhone || proj.clientEmail){
+    document.getElementById('pd-client-contact').style.display='';
+    document.getElementById('pd-client-phone').textContent = proj.clientPhone||proj.clientEmail||'—';
+  } else {
+    document.getElementById('pd-client-contact').style.display='none';
+  }
 
   pdRenderNotifs();
   pdRenderProc();
   pdRenderTodos();
+}
+
+// ── Project detail edit ───────────────────────────────────────────────────────
+function openProjEdit(){
+  const proj = RH.getProjs().find(p=>p.id===pdProjId);
+  if(!proj) return;
+  document.getElementById('proj-edit-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'proj-edit-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.3);margin:auto">
+      <div style="font-family:'Fraunces',serif;font-size:1.2rem;font-weight:300;margin-bottom:4px">Edit Project</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px">Update project details</div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Project Name <span style="color:var(--rust)">*</span></label>
+        <input class="fi" id="pe-name" value="${(proj.name||'').replace(/"/g,'&quot;')}" placeholder="Project name">
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Client Name</label>
+        <input class="fi" id="pe-client" value="${(proj.client||proj.loc||'').replace(/"/g,'&quot;')}" placeholder="e.g. Sharma Family">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        <div class="fg">
+          <label class="fl">Client Phone</label>
+          <input class="fi" id="pe-client-phone" type="tel" value="${(proj.clientPhone||'').replace(/"/g,'&quot;')}" placeholder="9876543210">
+        </div>
+        <div class="fg">
+          <label class="fl">Client Email</label>
+          <input class="fi" id="pe-client-email" type="email" value="${(proj.clientEmail||'').replace(/"/g,'&quot;')}" placeholder="client@email.com">
+        </div>
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Location / Area</label>
+        <input class="fi" id="pe-loc" value="${(proj.loc||'').replace(/"/g,'&quot;')}" placeholder="e.g. Mumbai, Bandra West">
+      </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Budget</label>
+        <input class="fi" id="pe-bud" value="${(proj.bud||'').replace(/"/g,'&quot;')}" placeholder="e.g. ₹18L">
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="fl">Completion %</label>
+        <input class="fi" id="pe-pct" type="number" min="0" max="100" value="${proj.pct||0}" placeholder="0–100">
+      </div>
+      <div id="pe-err" style="font-size:.72rem;color:var(--rust);margin-bottom:10px;display:none"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('proj-edit-modal').remove()">Cancel</button>
+        <button class="btn" style="flex:2;background:#5E7260" onclick="saveProjEdit()">Save Changes →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+  setTimeout(()=>document.getElementById('pe-name')?.focus(), 150);
+}
+
+function saveProjEdit(){
+  const name   = document.getElementById('pe-name').value.trim();
+  const client = document.getElementById('pe-client').value.trim();
+  const loc    = document.getElementById('pe-loc').value.trim();
+  const bud    = document.getElementById('pe-bud').value.trim();
+  const pct    = Math.min(100, Math.max(0, parseInt(document.getElementById('pe-pct').value)||0));
+  const errEl  = document.getElementById('pe-err');
+
+  if(!name){ errEl.textContent='Project name is required'; errEl.style.display='block'; return; }
+
+  const projs = RH.getProjs();
+  const idx = projs.findIndex(p=>p.id===pdProjId);
+  if(idx === -1){ toast('Project not found'); return; }
+
+  const clientPhone = document.getElementById('pe-client-phone').value.trim();
+  const clientEmail = document.getElementById('pe-client-email').value.trim();
+  projs[idx].name        = name;
+  projs[idx].client      = client;
+  projs[idx].clientPhone = clientPhone;
+  projs[idx].clientEmail = clientEmail;
+  projs[idx].loc         = loc || client;
+  projs[idx].bud         = bud;
+  projs[idx].pct         = pct;
+  projs[idx].phase       = pct >= 100 ? 'Completed' : pct > 0 ? 'Active · '+pct+'% done' : 'Active';
+  RH.saveProjs(projs);
+
+  // Update hero display
+  document.getElementById('pd-name').textContent  = name;
+  document.getElementById('pd-loc').textContent   = loc || client || '—';
+  document.getElementById('pd-bud').textContent   = bud || '—';
+  document.getElementById('pd-phase').textContent = projs[idx].phase;
+  document.getElementById('pd-pct').textContent   = pct+'%';
+
+  document.getElementById('proj-edit-modal').remove();
+  renderProjs(); // refresh project cards on home
+  toast('✅ Project updated');
+}
+
+// ── Project detail client contact helpers ────────────────────────────────────
+function pdCallClient(){
+  const proj = RH.getProjs().find(p=>p.id===pdProjId);
+  if(proj?.clientPhone) window.location.href='tel:+91'+proj.clientPhone.replace(/\D/g,'');
+  else toast('No phone number saved. Tap ✏️ Edit to add one.');
+}
+function pdWhatsAppClient(){
+  const proj = RH.getProjs().find(p=>p.id===pdProjId);
+  if(proj?.clientPhone){
+    const phone = '91'+proj.clientPhone.replace(/\D/g,'');
+    const msg = encodeURIComponent('Hi, this is regarding your '+proj.name+' project.');
+    window.open('https://wa.me/'+phone+'?text='+msg,'_blank');
+  } else toast('No phone number saved. Tap ✏️ Edit to add one.');
 }
 
 // ── Project detail quick nav ──────────────────────────────────────────────────
@@ -7191,6 +7924,151 @@ let boqBillFiles = [];     // staged bill images for current modal
 const PIE_COLS = ['#B8884A','#5E7260','#3A6B8A','#A84D3A','#7059A0','#4A7A6A','#C4743A','#6A8AB8','#8A5E7A','#5A8A4A','#B87050','#4A6A9A'];
 
 // ── Open BOQ screen ───────────────────────────────────────────────────────────
+// ── Cross-project Payments Dashboard ─────────────────────────────────────────
+function openPaymentsDashboard(){
+  const modal = document.createElement('div');
+  modal.id = 'payments-dash-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  modal.addEventListener('click', e=>{ if(e.target===modal) modal.remove(); });
+
+  const allProjs = getAllBOQProjs();
+  let rows = [];
+  let grandTotal=0, grandPaid=0, pendingItems=0;
+
+  allProjs.forEach(proj=>{
+    const data = BOQDB.getData(proj.id);
+    const items = data.items || [];
+    const projTotal = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
+    const projPaid  = items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0);
+    const projPending = items.filter(i=>i.status==='Order Placed').length;
+    const projBalance = Math.max(0, projTotal - projPaid);
+    if(projTotal > 0){
+      grandTotal += projTotal; grandPaid += projPaid; pendingItems += projPending;
+      rows.push({proj, projTotal, projPaid, projBalance, projPending, items});
+    }
+  });
+
+  const grandBalance = Math.max(0, grandTotal - grandPaid);
+
+  modal.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;max-width:720px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(28,26,23,.3);overflow:hidden;margin:auto">
+      <div style="padding:22px 24px 16px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:1.25rem;font-weight:300;margin-bottom:4px">📊 Payments Overview</div>
+          <div style="font-size:.72rem;color:var(--muted)">All projects · Outstanding balances</div>
+        </div>
+        <button onclick="document.getElementById('payments-dash-modal').remove()" style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)">✕</button>
+      </div>
+      <!-- Summary cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="padding:16px 20px;border-right:1px solid var(--border)">
+          <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total BOQ Value</div>
+          <div style="font-size:1.3rem;font-weight:600;color:var(--ink)">₹${fmtFull(grandTotal)}</div>
+        </div>
+        <div style="padding:16px 20px;border-right:1px solid var(--border)">
+          <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Total Paid</div>
+          <div style="font-size:1.3rem;font-weight:600;color:#5E7260">₹${fmtFull(grandPaid)}</div>
+        </div>
+        <div style="padding:16px 20px">
+          <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Balance Due</div>
+          <div style="font-size:1.3rem;font-weight:600;color:${grandBalance>0?'#A84D3A':'#5E7260'}">₹${fmtFull(grandBalance)}</div>
+        </div>
+      </div>
+      <!-- Per-project rows -->
+      <div style="overflow-y:auto;flex:1;padding:16px 24px">
+        ${rows.length ? rows.map(row=>`
+          <div style="border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden">
+            <div style="padding:14px 16px;background:var(--bg2);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+              <div>
+                <div style="font-weight:600;font-size:.88rem">${row.proj.name}</div>
+                <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${row.items.length} items · ${row.projPending} orders placed</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:.78rem;color:var(--muted)">Balance</div>
+                <div style="font-weight:700;color:${row.projBalance>0?'#A84D3A':'#5E7260'}">₹${fmtFull(row.projBalance)}</div>
+              </div>
+            </div>
+            <div style="display:none">
+              <div style="padding:10px 16px 0">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+                  <div style="font-size:.7rem;background:var(--bg);border-radius:8px;padding:8px 10px">
+                    <div style="color:var(--muted);margin-bottom:2px">Estimate</div>
+                    <div style="font-weight:600">₹${fmtFull(row.projTotal)}</div>
+                  </div>
+                  <div style="font-size:.7rem;background:rgba(94,114,96,.08);border-radius:8px;padding:8px 10px">
+                    <div style="color:var(--muted);margin-bottom:2px">Paid</div>
+                    <div style="font-weight:600;color:#5E7260">₹${fmtFull(row.projPaid)}</div>
+                  </div>
+                  <div style="font-size:.7rem;background:${row.projBalance>0?'rgba(168,77,58,.08)':'rgba(94,114,96,.08)'};border-radius:8px;padding:8px 10px">
+                    <div style="color:var(--muted);margin-bottom:2px">Balance</div>
+                    <div style="font-weight:600;color:${row.projBalance>0?'#A84D3A':'#5E7260'}">₹${fmtFull(row.projBalance)}</div>
+                  </div>
+                </div>
+                ${row.items.filter(i=>i.status==='Order Placed'||i.status==='Pending'&&(i.total>0)).slice(0,5).map(item=>`
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-top:1px solid var(--border);font-size:.73rem">
+                    <div>
+                      <span style="font-weight:500">${item.item}</span>
+                      <span style="background:${item.status==='Order Placed'?'rgba(58,107,138,.1)':'rgba(184,136,74,.1)'};color:${item.status==='Order Placed'?'#3A6B8A':'#B8884A'};border-radius:100px;padding:1px 8px;font-size:.6rem;margin-left:6px">${item.status}</span>
+                    </div>
+                    <div style="font-weight:600">₹${fmtFull(item.total)}</div>
+                  </div>`).join('')}
+              </div>
+              <div style="padding:10px 16px 12px;text-align:right">
+                <button class="btn-ghost btn-sm" style="font-size:.68rem" onclick="document.getElementById('payments-dash-modal').remove();openBOQ();setTimeout(()=>{document.getElementById('boq-proj-sel').value='${row.proj.id}';boqLoadProject('${row.proj.id}');},200)">Open BOQ →</button>
+              </div>
+            </div>
+          </div>`).join('') :
+          `<div style="text-align:center;padding:60px;color:var(--muted)">
+            <div style="font-size:2.5rem;margin-bottom:10px">📋</div>
+            <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:300">No BOQ data yet</div>
+            <div style="font-size:.76rem;margin-top:6px">Add items to your BOQ to see payment tracking here.</div>
+          </div>`
+        }
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── QR Code Generator ─────────────────────────────────────────────────────────
+function generateQR(url, containerId, size=120){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  container.innerHTML = '';
+  if(typeof QRCode === 'undefined'){
+    container.innerHTML = '<div style="font-size:.65rem;color:var(--muted)">QR loading…</div>';
+    return;
+  }
+  try{
+    new QRCode(container, {
+      text: url,
+      width: size, height: size,
+      colorDark: '#1C1A17', colorLight: '#FDFCFA',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch(e){ console.warn('QR error:', e); }
+}
+
+function openQRModal(url, title){
+  document.getElementById('qr-modal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'qr-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:300px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(28,26,23,.3)">
+      <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:300;margin-bottom:4px">${title}</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-bottom:16px">Scan to open on any device</div>
+      <div id="qr-canvas" style="display:flex;justify-content:center;margin-bottom:16px"></div>
+      <div style="font-size:.62rem;color:var(--muted2);margin-bottom:16px;word-break:break-all;background:var(--bg2);padding:6px 10px;border-radius:8px">${url}</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('qr-modal').remove()">Close</button>
+        <button class="btn" style="flex:1;background:var(--ink)" onclick="navigator.clipboard.writeText('${url}').then(()=>toast('🔗 Link copied!'))">📋 Copy Link</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+  setTimeout(()=>generateQR(url, 'qr-canvas', 140), 100);
+}
+
 function openBOQ(){
   if(_demoCheck('BOQ & Costs')) return;
   showScr('s-boq');
@@ -7212,10 +8090,7 @@ function openBOQ(){
 }
 
 function getAllBOQProjs(){
-  // Phase 1 sample projects + any Phase 2 rh_projects
-  const p1 = PROJS.map(p=>({id:p.id,name:p.name,icon:p.icon,type:p.type,loc:p.loc}));
-  const p2 = RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',type:p.type}));
-  return [...p1,...p2];
+  return RH.getProjs().map(p=>({id:p.id,name:p.name,icon:p.icon||'🏠',type:p.type,loc:p.loc||p.client||'—'}));
 }
 
 function boqLoadProject(id){
@@ -7248,6 +8123,34 @@ function boqRender(){
   boqRenderChart(data, items);
   boqRenderTabs(data, items);
   boqRenderTable(data, items);
+  // Init Sortable on each room's tbody for drag-to-reorder
+  setTimeout(()=>boqInitSortable(), 100);
+}
+
+function boqInitSortable(){
+  if(typeof Sortable === 'undefined') return;
+  document.querySelectorAll('.boq-sortable-body').forEach(tbody=>{
+    if(tbody._sortable) tbody._sortable.destroy();
+    tbody._sortable = Sortable.create(tbody, {
+      animation: 150,
+      handle: '.boq-drag-handle',
+      ghostClass: 'boq-drag-ghost',
+      onEnd(evt){
+        if(evt.oldIndex === evt.newIndex) return;
+        const data = BOQDB.getData(boqProjId);
+        const room = tbody.dataset.room;
+        const roomItems = data.items.filter(i=>i.room===room);
+        const otherItems = data.items.filter(i=>i.room!==room);
+        // Reorder within this room
+        const moved = roomItems.splice(evt.oldIndex, 1)[0];
+        roomItems.splice(evt.newIndex, 0, moved);
+        data.items = [...otherItems, ...roomItems];
+        BOQDB.saveData(boqProjId, data);
+        boqRender();
+        toast('↕ Order saved');
+      }
+    });
+  });
 }
 
 // ── Summary cards ─────────────────────────────────────────────────────────────
@@ -7363,7 +8266,8 @@ function boqRenderTable(data, allItems){
       const ordCol={'Pending':'ord-pending','Order Placed':'ord-placed','Delivered':'ord-delivered','Cancelled':'ord-cancelled'}[item.status]||'ord-pending';
       const billCount = item.billCount||0;
       return `<tr class="${item.room==='Miscellaneous'||title==='Miscellaneous'?'misc-row':''}">
-        <td style="color:var(--muted);font-size:.68rem;width:30px">${idx+1}</td>
+        <td style="width:20px"><span class="boq-drag-handle" title="Drag to reorder">⠿</span></td>
+        <td style="color:var(--muted);font-size:.68rem;width:24px">${idx+1}</td>
         <td style="min-width:120px;font-weight:500">${item.item||'—'}</td>
         <td style="min-width:180px;color:var(--ink2);font-size:.74rem">${item.desc||'—'}</td>
         <td style="text-align:right;width:60px">${item.qty||'—'}</td>
@@ -7396,7 +8300,8 @@ function boqRenderTable(data, allItems){
       <td></td>
     </tr>` : '';
 
-    return titleRow+rows+subtotalRow;
+    const safeRoom = (title||'other').replace(/[^a-z0-9]/gi,'_');
+    return `<tbody class="boq-sortable-body" data-room="${title||''}">${titleRow}${rows}${subtotalRow}</tbody>`;
   };
 
   let bodyHtml='';
@@ -7426,9 +8331,9 @@ function boqRenderTable(data, allItems){
         <th style="text-align:right">Rate (₹)</th><th style="text-align:right">Amount (₹)</th>
         <th>Vendor</th><th>Order Status</th><th style="text-align:right">Cost Paid (₹)</th><th></th>
       </tr></thead>
-      <tbody>${bodyHtml||'<tr><td colspan="11" style="text-align:center;padding:48px;color:var(--muted)">No items yet. Click + Add Item to get started.</td></tr>'}</tbody>
+      ${bodyHtml||'<tbody><tr><td colspan="12" style="text-align:center;padding:48px;color:var(--muted)">No items yet. Click + Add Item to get started.</td></tr></tbody>'}
       <tfoot><tr class="total-row">
-        <td colspan="6" style="text-align:right;letter-spacing:.5px">GRAND TOTAL</td>
+        <td colspan="7" style="text-align:right;letter-spacing:.5px">GRAND TOTAL</td>
         <td style="text-align:right;font-size:1rem">₹${fmtFull(grandTotal)}</td>
         <td colspan="2"></td>
         <td style="text-align:right">₹${fmtFull(grandPaid)}</td>
@@ -8075,6 +8980,120 @@ function boqImportTemplate(items){
 
 
 // ── Export CSV ────────────────────────────────────────────────────────────────
+// ── BOQ PDF Export ────────────────────────────────────────────────────────────
+async function boqExportPDF(){
+  if(!boqProjId){ toast('Select a project first'); return; }
+  if(typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined'){
+    toast('PDF library loading… try again in a moment'); return;
+  }
+  const btn = document.querySelector('[onclick="boqExportPDF()"]');
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Generating…'; }
+
+  try{
+    const { jsPDF } = window.jspdf || window;
+    const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    const data = BOQDB.getData(boqProjId);
+    const proj = getAllBOQProjs().find(p=>p.id===boqProjId);
+    const designer = PROFDB.get();
+    const items = data.items;
+    const now = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+
+    // Header
+    doc.setFillColor(28,26,23);
+    doc.rect(0,0,297,28,'F');
+    doc.setTextColor(247,244,239);
+    doc.setFontSize(16);
+    doc.setFont('helvetica','bold');
+    doc.text('BILL OF QUANTITIES', 14, 12);
+    doc.setFontSize(9);
+    doc.setFont('helvetica','normal');
+    doc.text(proj?.name||'Project', 14, 19);
+    doc.text(designer.company||designer.name||'', 14, 24);
+    doc.setTextColor(184,136,74);
+    doc.text('DesignMind', 250, 12);
+    doc.setTextColor(180,180,180);
+    doc.text('Generated: '+now, 250, 19);
+
+    // Summary row
+    const totalEst = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
+    const totalPaid = items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0);
+    doc.setFillColor(248,245,240);
+    doc.rect(0,28,297,14,'F');
+    doc.setTextColor(28,26,23);
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.text('Total Estimate: ₹'+fmtFull(totalEst), 14, 37);
+    doc.text('Paid: ₹'+fmtFull(totalPaid), 100, 37);
+    doc.text('Balance: ₹'+fmtFull(Math.max(0,totalEst-totalPaid)), 180, 37);
+    doc.text(items.length+' items', 250, 37);
+
+    // Table
+    const roomGroups = {};
+    data.rooms.forEach(r=>roomGroups[r]=[]);
+    items.forEach(item=>{ if(!roomGroups[item.room]) roomGroups[item.room]=[]; roomGroups[item.room].push(item); });
+
+    const tableRows = [];
+    Object.entries(roomGroups).forEach(([room, roomItems])=>{
+      if(!roomItems.length) return;
+      tableRows.push([{ content:room.toUpperCase(), colSpan:8, styles:{fillColor:[240,235,228],fontStyle:'bold',textColor:[100,80,60],fontSize:8} }]);
+      roomItems.forEach((item,idx)=>{
+        tableRows.push([
+          idx+1,
+          item.item||'—',
+          (item.desc||'—').substring(0,35),
+          (item.qty||'—')+' '+(item.size||''),
+          '₹'+fmtFull(item.rate),
+          '₹'+fmtFull(item.total),
+          item.vendor||'—',
+          item.status||'Pending'
+        ]);
+      });
+    });
+
+    doc.autoTable({
+      startY: 46,
+      head: [['#','Item','Description','Qty/Size','Rate','Total','Vendor','Status']],
+      body: tableRows,
+      theme: 'grid',
+      headStyles:{ fillColor:[28,26,23], textColor:[247,244,239], fontSize:8, fontStyle:'bold' },
+      bodyStyles:{ fontSize:7.5, textColor:[40,35,30] },
+      alternateRowStyles:{ fillColor:[252,251,249] },
+      columnStyles:{
+        0:{cellWidth:8}, 1:{cellWidth:45}, 2:{cellWidth:55}, 3:{cellWidth:22},
+        4:{cellWidth:22}, 5:{cellWidth:25}, 6:{cellWidth:35}, 7:{cellWidth:20}
+      },
+      margin:{left:14,right:14},
+      didParseCell:(data)=>{
+        if(data.cell.raw?.colSpan===8) return;
+        if(data.column.index===7){
+          const s=data.cell.text[0];
+          if(s==='Delivered') data.cell.styles.textColor=[60,120,80];
+          else if(s==='Order Placed') data.cell.styles.textColor=[60,80,150];
+          else if(s==='Cancelled') data.cell.styles.textColor=[150,60,60];
+        }
+        if(data.column.index===5) data.cell.styles.fontStyle='bold';
+      }
+    });
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for(let i=1;i<=pageCount;i++){
+      doc.setPage(i);
+      doc.setFontSize(7); doc.setTextColor(160,155,150);
+      doc.text('Page '+i+' of '+pageCount+' — '+( designer.company||'DesignMind')+' — '+( designer.phone?'+91 '+designer.phone:''), 14, 208);
+    }
+
+    doc.save((proj?.name||'BOQ')+' — BOQ.pdf');
+    toast('📄 PDF downloaded!');
+  } catch(e){
+    console.error('PDF error:',e);
+    toast('PDF generation failed — '+e.message);
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='📄 Export PDF'; }
+  }
+}
+
+
 function boqExportCSV(){
   if(!boqProjId)return;
   const data=BOQDB.getData(boqProjId);
