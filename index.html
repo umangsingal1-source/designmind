@@ -92,6 +92,36 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 /* PAGE */
 .page{max-width:1280px;margin:0 auto;padding:44px 48px;}
 .scr{display:none;}
+
+/* ── PRINT STYLES ── */
+@media print{
+  /* Show active screen, hide everything else */
+  body > *:not(.page){ display:none!important; }
+  .page{ display:block!important; }
+  .scr{ display:none!important; }
+  .scr.on{ display:block!important; }
+  /* Hide nav, buttons, bottom nav, widgets */
+  .nav, #bottomNav, .home-widgets, .s-head .btn, .s-head .btn-ghost,
+  .boq-toolbar, .boq-main-tabs, #boq-proj-sel, .boq-ai-btn,
+  .boq-act-btns, .boq-drag-handle, .ord-pill,
+  .search-wrap, .stats, .proj-filter-pill,
+  button[onclick*="goHome"], button[onclick*="openBOQ"],
+  .pd-quick-btns, #sp4wf, .wf { display:none!important; }
+  /* BOQ print styles */
+  #s-boq{ padding:0!important; }
+  .boq-summary{ grid-template-columns:repeat(4,1fr)!important; }
+  .boq-tbl-wrap{ overflow:visible!important; }
+  table{ width:100%!important; font-size:9pt!important; border-collapse:collapse!important; }
+  th,td{ border:1px solid #ddd!important; padding:4px 6px!important; }
+  thead{ background:#1C1A17!important; color:white!important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .misc-row{ background:#f9f6f2!important; }
+  .total-row td{ font-weight:bold!important; border-top:2px solid #333!important; }
+  /* Page breaks */
+  .boq-section-group{ page-break-inside:avoid; }
+  /* Show project name as header */
+  #boq-sub{ font-size:11pt!important; font-weight:600!important; margin-bottom:8px!important; }
+  @page{ margin:15mm; size:A4 landscape; }
+}
 .scr.on{display:block;animation:fadeup .35s cubic-bezier(.22,1,.36,1);}
 @keyframes fadeup{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:none;}}
 
@@ -1003,6 +1033,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -1224,6 +1255,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
     <li class="nlink" onclick="openPortfolio()">My Portfolio</li>
     <li class="nlink" onclick="openPlugins()">Plugins</li>
     <li class="nlink" onclick="openAnalytics()">📊 Analytics</li>
+    <li onclick="openSBSettings()" style="cursor:pointer;padding:6px 12px;border-radius:100px;font-size:.72rem;font-weight:500;transition:all .2s" id="sb-sync-badge">💾 Local only</li>
   </ul>
   <div style="display:flex;align-items:center;gap:10px">
     <div class="notif-bell-wrap" onclick="openNotifPanel()">
@@ -2305,6 +2337,13 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
           <div id="dev-leads-info" style="font-size:.71rem;line-height:1.9;color:var(--muted)">—</div>
         </div>
 
+        <!-- Cloud Sync -->
+        <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:.62rem;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">☁️ Cloud Sync</div>
+          <button class="btn" style="width:100%;background:#3ECF8E;color:#1a1a1a;font-size:.75rem" onclick="openSBSettings()">Configure Supabase →</button>
+          <div style="font-size:.62rem;color:var(--muted2);margin-top:6px;line-height:1.5">Connect to Supabase for cross-device sync, cloud backup, and real share links.</div>
+        </div>
+
         <!-- Curated Library Management -->
         <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
@@ -2610,7 +2649,10 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 <!-- ══ SCREEN: BOQ & COSTS ══ -->
 <div class="scr" id="s-boq">
   <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap">
-    <div><h1 class="s-title">BOQ & <em>Cost Sheet</em></h1><p class="s-sub" id="boq-sub">Bill of Quantities · Procurement · Cost Analysis</p></div>
+    <div>
+      <button class="btn-ghost btn-sm" onclick="goHome()" style="margin-bottom:8px;font-size:.74rem">← Back</button>
+      <h1 class="s-title">BOQ & <em>Cost Sheet</em></h1><p class="s-sub" id="boq-sub">Bill of Quantities · Procurement · Cost Analysis</p>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
       <select class="bfs" id="boq-proj-sel" onchange="boqLoadProject(this.value)" style="background:#FDFCFA;border:1px solid var(--border);border-radius:100px;padding:8px 24px 8px 14px;font-family:'Outfit',sans-serif;font-size:.78rem;outline:none;cursor:pointer;min-width:180px"></select>
       <button class="btn-ghost btn-sm" onclick="openPaymentsDashboard()" style="white-space:nowrap">📊 All Payments</button>
@@ -4297,10 +4339,10 @@ function rhuHandleFiles(files){
         <button onclick="rhuRemoveFile(${fi})" style="background:none;border:none;color:var(--muted2);cursor:pointer;font-size:.8rem;flex-shrink:0">✕</button>`;
       thumbs.appendChild(card);
       loaded++;
-      document.getElementById('rhu-count').textContent=loaded;
+      const cntEl=document.getElementById('rhu-count'); if(cntEl) cntEl.textContent=loaded;
       if(loaded===toRead.length){
         document.getElementById('rhu-preview').style.display='block';
-        document.getElementById('rhu-btn').disabled=false;
+        const btnEl=document.getElementById('rhu-btn'); if(btnEl) btnEl.disabled=false;
       }
     };
     reader.readAsDataURL(f);
@@ -4731,6 +4773,381 @@ function pexelsDemoGrid(q){
 
 // ── AI Render Analysis — when renders are uploaded, Claude analyses them ──────
 // Stored in localStorage: dm_render_tags: [{imgId, projId, projName, style, palette, mood, materials, dataUrl, analysedAt}]
+// ══════════════════════════════════════════════════════════════════════════════
+// SUPABASE — Cloud Sync Layer
+// Replace SUPABASE_URL and SUPABASE_ANON_KEY with your project values
+// Get them from: supabase.com → your project → Settings → API
+// ══════════════════════════════════════════════════════════════════════════════
+const SUPABASE_URL      = '';   // 🔑 PASTE: https://your-project.supabase.co
+const SUPABASE_ANON_KEY = '';   // 🔑 PASTE: eyJhbGci...
+
+// ── Supabase client (lazy-init when keys are provided) ────────────────────────
+let _sb = null;
+function getSB(){
+  if(_sb) return _sb;
+  // Try hardcoded keys first, then localStorage saved keys
+  const url = SUPABASE_URL || localStorage.getItem('dm_sb_url') || '';
+  const key = SUPABASE_ANON_KEY || localStorage.getItem('dm_sb_key') || '';
+  if(!url || !key) return null;
+  try{
+    if(typeof supabase === 'undefined') return null;
+    _sb = supabase.createClient(url, key);
+    return _sb;
+  } catch(e){ console.warn('Supabase init failed:', e); return null; }
+}
+
+const SB_ENABLED = () => {
+  const url = SUPABASE_URL || localStorage.getItem('dm_sb_url') || '';
+  const key = SUPABASE_ANON_KEY || localStorage.getItem('dm_sb_key') || '';
+  return !!(url && key && getSB());
+};
+
+// ── Sync queue — writes that failed while offline ─────────────────────────────
+const SYNC_QUEUE = {
+  key: 'dm_sync_queue',
+  get(){ try{ return JSON.parse(localStorage.getItem(this.key)||'[]'); }catch{ return []; } },
+  add(op){ const q=this.get(); q.push({...op, ts:Date.now()}); localStorage.setItem(this.key, JSON.stringify(q.slice(-200))); },
+  clear(){ localStorage.removeItem(this.key); },
+  save(q){ localStorage.setItem(this.key, JSON.stringify(q)); }
+};
+
+// ── Cloud auth state ──────────────────────────────────────────────────────────
+let _sbUser = null; // Supabase user object when logged in via cloud auth
+
+async function sbGetUser(){
+  const sb = getSB(); if(!sb) return null;
+  try{
+    const { data:{ session } } = await sb.auth.getSession();
+    _sbUser = session?.user || null;
+    return _sbUser;
+  } catch(e){ return null; }
+}
+
+// ── SUPABASE AUTH: Email OTP login ────────────────────────────────────────────
+async function sbSendOTP(email){
+  const sb = getSB(); if(!sb) return { error:'Supabase not configured' };
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  return { error };
+}
+
+async function sbVerifyOTP(email, token){
+  const sb = getSB(); if(!sb) return { error:'Supabase not configured' };
+  const { data, error } = await sb.auth.verifyOtp({ email, token, type:'email' });
+  if(!error) _sbUser = data.user;
+  return { data, error };
+}
+
+async function sbSignOut(){
+  const sb = getSB(); if(!sb) return;
+  await sb.auth.signOut();
+  _sbUser = null;
+}
+
+// ── PROFILE SYNC ──────────────────────────────────────────────────────────────
+async function sbSaveProfile(prof){
+  const sb = getSB(); if(!sb || !_sbUser) return;
+  try{
+    const { error } = await sb.from('profiles').upsert({
+      id: _sbUser.id,
+      phone: prof.phone, name: prof.name, name_id: prof.nameId,
+      company: prof.company, position: prof.position,
+      company_email: prof.companyEmail, email: prof.email,
+      insta: prof.insta, location: prof.location,
+      website: prof.website, birthday: prof.birthday,
+      exp: prof.exp, avatar_url: prof.avatarUrl,
+      portfolio_token: prof.portfolioToken,
+      status: prof.status||'approved', mode: prof.mode||'full',
+      updated_at: new Date().toISOString()
+    }, { onConflict:'id' });
+    if(error) console.warn('Profile sync error:', error);
+  } catch(e){ SYNC_QUEUE.add({ type:'profile', data:prof }); }
+}
+
+async function sbLoadProfile(){
+  const sb = getSB(); if(!sb || !_sbUser) return null;
+  try{
+    const { data, error } = await sb.from('profiles').select('*').eq('id', _sbUser.id).single();
+    if(error || !data) return null;
+    // Map back to app format
+    return {
+      name: data.name, nameId: data.name_id, phone: data.phone,
+      company: data.company, position: data.position,
+      companyEmail: data.company_email, email: data.email,
+      insta: data.insta, location: data.location,
+      website: data.website, birthday: data.birthday,
+      exp: data.exp, avatarUrl: data.avatar_url,
+      portfolioToken: data.portfolio_token,
+      status: data.status, mode: data.mode,
+    };
+  } catch(e){ return null; }
+}
+
+// ── PROJECT SYNC ──────────────────────────────────────────────────────────────
+async function sbSaveProject(proj){
+  const sb = getSB(); if(!sb || !_sbUser) return;
+  try{
+    const { error } = await sb.from('projects').upsert({
+      id: proj.id, user_id: _sbUser.id,
+      name: proj.name, type: proj.type, icon: proj.icon,
+      label: proj.label, color: proj.color,
+      client: proj.client, client_phone: proj.clientPhone,
+      client_email: proj.clientEmail, loc: proj.loc,
+      bud: proj.bud, phase: proj.phase, pct: proj.pct||0,
+      completed: proj.completed||false, completed_at: proj.completedAt ? new Date(proj.completedAt).toISOString() : null,
+      share_token: proj.shareToken,
+      sections: proj.sections||[], rooms: proj.rooms||[],
+      updated_at: new Date().toISOString()
+    }, { onConflict:'id' });
+    if(error) console.warn('Project sync error:', error);
+  } catch(e){ SYNC_QUEUE.add({ type:'project', data:proj }); }
+}
+
+async function sbLoadProjects(){
+  const sb = getSB(); if(!sb || !_sbUser) return null;
+  try{
+    const { data, error } = await sb.from('projects').select('*').eq('user_id', _sbUser.id).order('created_at', { ascending:false });
+    if(error || !data) return null;
+    return data.map(p=>({
+      id:p.id, name:p.name, type:p.type, icon:p.icon||'🏠',
+      label:p.label, color:p.color||'gold',
+      client:p.client||'—', clientPhone:p.client_phone,
+      clientEmail:p.client_email, loc:p.loc||'—',
+      bud:p.bud||'—', phase:p.phase||'Active', pct:p.pct||0,
+      completed:p.completed, completedAt:p.completed_at ? new Date(p.completed_at).getTime() : null,
+      shareToken:p.share_token||p.id+'_share',
+      sections:p.sections||[], rooms:p.rooms||[],
+      createdAt: new Date(p.created_at).getTime()
+    }));
+  } catch(e){ return null; }
+}
+
+async function sbDeleteProject(projId){
+  const sb = getSB(); if(!sb || !_sbUser) return;
+  try{ await sb.from('projects').delete().eq('id', projId).eq('user_id', _sbUser.id); }
+  catch(e){ SYNC_QUEUE.add({ type:'deleteProject', id:projId }); }
+}
+
+// ── BOQ SYNC ──────────────────────────────────────────────────────────────────
+async function sbSaveBOQ(projId){
+  const sb = getSB(); if(!sb || !_sbUser) return;
+  try{
+    const data = BOQDB.getData(projId);
+    if(!data?.items?.length) return;
+    // Upsert all items
+    const rows = data.items.map((item,i)=>({
+      id: item.id, project_id: projId, user_id: _sbUser.id,
+      room:item.room, item:item.item, desc:item.desc,
+      qty:item.qty, size:item.size, rate:item.rate||0,
+      total:item.total||0, vendor:item.vendor,
+      status:item.status||'Pending', order_date:item.orderDate,
+      cost:item.cost||0, notes:item.notes, sort_order:i,
+      updated_at: new Date().toISOString()
+    }));
+    const { error } = await sb.from('boq_items').upsert(rows, { onConflict:'id' });
+    if(error) console.warn('BOQ sync error:', error);
+  } catch(e){ SYNC_QUEUE.add({ type:'boq', projId }); }
+}
+
+async function sbLoadBOQ(projId){
+  const sb = getSB(); if(!sb || !_sbUser) return null;
+  try{
+    const { data, error } = await sb.from('boq_items').select('*')
+      .eq('project_id', projId).eq('user_id', _sbUser.id)
+      .order('sort_order');
+    if(error || !data) return null;
+    return data.map(r=>({
+      id:r.id, room:r.room, item:r.item, desc:r.desc,
+      qty:r.qty, size:r.size, rate:r.rate, total:r.total,
+      vendor:r.vendor, status:r.status, orderDate:r.order_date,
+      cost:r.cost, notes:r.notes
+    }));
+  } catch(e){ return null; }
+}
+
+// ── IMAGE UPLOAD TO SUPABASE STORAGE ─────────────────────────────────────────
+async function sbUploadImage(dataUrl, bucket, path){
+  const sb = getSB(); if(!sb || !_sbUser) return null;
+  try{
+    // Convert dataUrl to blob
+    const res = await fetch(dataUrl);
+    const blob = await res.blob();
+    const ext = blob.type.includes('png') ? 'png' : 'jpg';
+    const fullPath = `${_sbUser.id}/${path}.${ext}`;
+    const { data, error } = await sb.storage.from(bucket).upload(fullPath, blob, {
+      cacheControl:'3600', upsert:true, contentType:blob.type
+    });
+    if(error){ console.warn('Upload error:', error); return null; }
+    const { data:{ publicUrl } } = sb.storage.from(bucket).getPublicUrl(fullPath);
+    return publicUrl;
+  } catch(e){ console.warn('Upload failed:', e); return null; }
+}
+
+// ── SYNC ENGINE: runs on startup and periodically ─────────────────────────────
+let _syncRunning = false;
+async function sbSync(){
+  if(!SB_ENABLED() || _syncRunning) return;
+  _syncRunning = true;
+  try{
+    const user = await sbGetUser();
+    if(!user){ _syncRunning=false; return; }
+
+    // Push any queued operations
+    const queue = SYNC_QUEUE.get();
+    const failed = [];
+    for(const op of queue){
+      try{
+        if(op.type==='profile') await sbSaveProfile(op.data);
+        else if(op.type==='project') await sbSaveProject(op.data);
+        else if(op.type==='boq') await sbSaveBOQ(op.projId);
+        else if(op.type==='deleteProject') await sbDeleteProject(op.id);
+      } catch(e){ failed.push(op); }
+    }
+    if(failed.length < queue.length) SYNC_QUEUE.save(failed);
+
+    // Pull latest projects (cloud wins on new device)
+    const localProjs = RH.getProjs();
+    if(!localProjs.length){
+      const cloudProjs = await sbLoadProjects();
+      if(cloudProjs?.length){
+        RH.saveProjs(cloudProjs);
+        renderProjs?.();
+        toast('☁️ Projects synced from cloud!');
+      }
+    } else {
+      // Push local to cloud
+      for(const p of localProjs){ await sbSaveProject(p); }
+    }
+
+    // Pull profile if local is empty
+    const localProf = PROFDB.get();
+    if(!localProf.name){
+      const cloudProf = await sbLoadProfile();
+      if(cloudProf){ PROFDB.save(cloudProf); }
+    } else {
+      await sbSaveProfile(localProf);
+    }
+
+    // Update sync status indicator
+    sbUpdateSyncBadge('synced');
+  } catch(e){
+    console.warn('Sync error:', e);
+    sbUpdateSyncBadge('error');
+  } finally {
+    _syncRunning = false;
+  }
+}
+
+function sbUpdateSyncBadge(status){
+  const badge = document.getElementById('sb-sync-badge');
+  if(!badge) return;
+  const states = {
+    synced: { text:'☁️ Synced', color:'var(--sage)', bg:'rgba(94,114,96,.1)' },
+    syncing:{ text:'⟳ Syncing…', color:'var(--blue)', bg:'rgba(58,107,138,.1)' },
+    error:  { text:'⚠️ Offline', color:'var(--rust)', bg:'rgba(168,77,58,.1)' },
+    off:    { text:'💾 Local only', color:'var(--muted)', bg:'transparent' },
+  };
+  const s = states[status]||states.off;
+  badge.textContent = s.text;
+  badge.style.color = s.color;
+  badge.style.background = s.bg;
+}
+
+// Patch RH.saveProjs to also sync to Supabase
+const _origSaveProjs = RH.saveProjs.bind(RH);
+RH.saveProjs = function(projs){
+  _origSaveProjs(projs);
+  if(SB_ENABLED()){
+    projs.forEach(p=> sbSaveProject(p).catch(()=>SYNC_QUEUE.add({type:'project',data:p})));
+  }
+};
+
+// Patch PROFDB.save to also sync
+const _origSaveProf = PROFDB.save.bind(PROFDB);
+PROFDB.save = function(prof){
+  _origSaveProf(prof);
+  if(SB_ENABLED()) sbSaveProfile(prof).catch(()=>SYNC_QUEUE.add({type:'profile',data:prof}));
+};
+
+// Auto sync every 5 minutes + on visibility change
+setInterval(()=>{ if(!document.hidden && SB_ENABLED()) sbSync(); }, 5*60*1000);
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && SB_ENABLED()) setTimeout(sbSync, 1000); });
+
+// Run initial sync after app loads
+setTimeout(()=>{ if(SB_ENABLED()) sbSync(); }, 3000);
+
+// ── SUPABASE SETTINGS PANEL (in Profile → Admin) ──────────────────────────────
+function openSBSettings(){
+  document.getElementById('sb-settings-modal')?.remove();
+  const isConfigured = !!(SUPABASE_URL && SUPABASE_ANON_KEY);
+  const m = document.createElement('div');
+  m.id = 'sb-settings-modal';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(28,26,23,.65);backdrop-filter:blur(8px);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+  m.innerHTML = `
+    <div style="background:#FDFCFA;border-radius:20px;padding:28px 24px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(28,26,23,.3)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <span style="font-size:1.4rem">☁️</span>
+        <div style="font-family:'Fraunces',serif;font-size:1.15rem;font-weight:300">Supabase Cloud Sync</div>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6">
+        Connect DesignMind to Supabase for cross-device sync. Your data stays on this device too — cloud is a backup and sync layer.
+      </div>
+      ${isConfigured
+        ? `<div style="background:rgba(94,114,96,.1);border:1px solid rgba(94,114,96,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:.76rem;color:#5E7260">
+            ✅ Supabase is connected. All data syncs automatically.
+           </div>`
+        : `<div style="background:rgba(184,136,74,.08);border:1px solid rgba(184,136,74,.2);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:.76rem;color:var(--ink2);line-height:1.7">
+            ⚡ Not connected yet. Follow the <strong>supabase-setup-guide.md</strong> to get your keys, then paste them below.
+           </div>`
+      }
+      <div class="fg" style="margin-bottom:12px">
+        <label class="fl">Supabase Project URL</label>
+        <input class="fi" id="sb-url-inp" placeholder="https://xyzabc.supabase.co" value="${SUPABASE_URL}" style="font-size:.74rem;font-family:monospace">
+      </div>
+      <div class="fg" style="margin-bottom:20px">
+        <label class="fl">Anon Public Key</label>
+        <input class="fi" id="sb-key-inp" placeholder="eyJhbGci…" value="${SUPABASE_ANON_KEY}" style="font-size:.7rem;font-family:monospace">
+      </div>
+      <div style="font-size:.68rem;color:var(--muted2);margin-bottom:16px;line-height:1.6">
+        ⚠️ These keys are stored in your browser only. Never share your <strong>service_role</strong> key — only use the <strong>anon</strong> key here.
+      </div>
+      <div id="sb-save-status" style="font-size:.72rem;color:var(--sage);margin-bottom:10px;display:none"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn-ghost" style="flex:1" onclick="document.getElementById('sb-settings-modal').remove()">Cancel</button>
+        <button class="btn" style="flex:2;background:#3ECF8E;color:#1a1a1a" onclick="sbSaveSettings()">Save & Connect ☁️</button>
+      </div>
+      ${isConfigured ? `<button class="btn-ghost" style="width:100%;margin-top:8px;color:var(--rust);font-size:.72rem" onclick="sbForceSync()">↺ Force sync now</button>` : ''}
+    </div>`;
+  document.body.appendChild(m);
+  m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
+}
+
+function sbSaveSettings(){
+  const url = document.getElementById('sb-url-inp')?.value.trim();
+  const key = document.getElementById('sb-key-inp')?.value.trim();
+  if(!url || !key){ toast('Both URL and key are required'); return; }
+  if(!url.startsWith('https://')){ toast('URL must start with https://'); return; }
+  if(!key.startsWith('eyJ')){ toast('Key looks wrong — copy the anon public key from Supabase'); return; }
+
+  // Store in localStorage (persists between sessions)
+  localStorage.setItem('dm_sb_url', url);
+  localStorage.setItem('dm_sb_key', key);
+
+  const statusEl = document.getElementById('sb-save-status');
+  if(statusEl){ statusEl.style.display='block'; statusEl.textContent='⟳ Connecting…'; }
+
+  // Reload to apply
+  setTimeout(()=>{ toast('☁️ Supabase connected! Reloading…'); setTimeout(()=>location.reload(), 1500); }, 500);
+}
+
+async function sbForceSync(){
+  toast('⟳ Syncing now…');
+  sbUpdateSyncBadge('syncing');
+  await sbSync();
+  toast('☁️ Sync complete!');
+}
+
+// Supabase keys loaded dynamically via getSB()
+
 // ── ADMIN CURATED PHOTO LIBRARY ───────────────────────────────────────────────
 // Admin-added Pexels photos extend IMG_DB for all users. Stored globally (not per-user).
 const ADMIN_CURATED = {
@@ -7129,7 +7546,7 @@ function expAdd(){
   const amt    = parseFloat(document.getElementById('exp-amt-inp')?.value||'0');
   if(!note){ toast('Please add a note'); return; }
   if(!amt || amt<=0){ toast('Please enter a valid amount'); return; }
-  EXPDB.add({ type, note, amount: amt, date: new Date().toLocaleDateString('en-IN') });
+  EXPDB.add({ type, note, amount: amt, date: new Date().toLocaleDateString('en-IN'), createdAt: Date.now() });
   document.getElementById('exp-note-inp').value = '';
   document.getElementById('exp-amt-inp').value  = '';
   expRender();
@@ -7350,18 +7767,21 @@ function openProjDetail(proj){
   document.getElementById('mainNav').style.display='';
 
   // Hero
-  document.getElementById('pd-icon').textContent = proj.icon||'🏠';
-  document.getElementById('pd-name').textContent  = proj.name;
-  document.getElementById('pd-loc').textContent   = proj.loc||'—';
-  document.getElementById('pd-bud').textContent   = proj.bud||'—';
-  document.getElementById('pd-phase').textContent = proj.phase||'Active';
-  document.getElementById('pd-pct').textContent   = (proj.pct||0)+'%';
+  const _pd = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  _pd('pd-icon',  proj.icon||'🏠');
+  _pd('pd-name',  proj.name);
+  _pd('pd-loc',   proj.loc||'—');
+  _pd('pd-bud',   proj.bud||'—');
+  _pd('pd-phase', proj.phase||'Active');
+  _pd('pd-pct',   (proj.pct||0)+'%');
   // Show client contact if available
+  const _ccEl = document.getElementById('pd-client-contact');
+  const _cpEl = document.getElementById('pd-client-phone');
   if(proj.clientPhone || proj.clientEmail){
-    document.getElementById('pd-client-contact').style.display='';
-    document.getElementById('pd-client-phone').textContent = proj.clientPhone||proj.clientEmail||'—';
+    if(_ccEl) _ccEl.style.display='';
+    if(_cpEl) _cpEl.textContent = proj.clientPhone||proj.clientEmail||'—';
   } else {
-    document.getElementById('pd-client-contact').style.display='none';
+    if(_ccEl) _ccEl.style.display='none';
   }
 
   pdRenderNotifs();
@@ -7448,12 +7868,13 @@ function saveProjEdit(){
   projs[idx].phase       = pct >= 100 ? 'Completed' : pct > 0 ? 'Active · '+pct+'% done' : 'Active';
   RH.saveProjs(projs);
 
-  // Update hero display
-  document.getElementById('pd-name').textContent  = name;
-  document.getElementById('pd-loc').textContent   = loc || client || '—';
-  document.getElementById('pd-bud').textContent   = bud || '—';
-  document.getElementById('pd-phase').textContent = projs[idx].phase;
-  document.getElementById('pd-pct').textContent   = pct+'%';
+  // Update hero display (safe pattern - s-pd may not be active)
+  const _pu = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  _pu('pd-name',  name);
+  _pu('pd-loc',   loc || client || '—');
+  _pu('pd-bud',   bud || '—');
+  _pu('pd-phase', projs[idx].phase);
+  _pu('pd-pct',   pct+'%');
 
   document.getElementById('proj-edit-modal').remove();
   renderProjs(); // refresh project cards on home
@@ -7868,8 +8289,117 @@ function scheduleNotifTimers(){
 addEventListener('DOMContentLoaded',()=>{
   refreshNotifBadge();
   scheduleNotifTimers();
-  // Note: #client/ and #snag/ hash routing is handled in the main auth DOMContentLoaded above
+  // Start hourly auto health check
+  startAutoHealthCheck();
 });
+
+// ── AUTO HEALTH CHECK (runs every hour while browser is open) ─────────────────
+const HEALTH_CHECK_INTERVAL = 60 * 60 * 1000; // 1 hour
+let _healthCheckTimer = null;
+
+function startAutoHealthCheck(){
+  // Run once after 30s (give app time to load)
+  setTimeout(runHealthCheck, 30000);
+  // Then every hour
+  _healthCheckTimer = setInterval(runHealthCheck, HEALTH_CHECK_INTERVAL);
+  // Also run on visibility change (tab becomes active again)
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden) runHealthCheck();
+  });
+}
+
+function runHealthCheck(){
+  // Only run if user is logged in
+  const user = JSON.parse(localStorage.getItem('dm_user')||'{}');
+  if(!user.phone && user.mode!=='demo') return;
+
+  const issues = [];
+  const now = Date.now();
+
+  try{
+    // 1. Check localStorage usage (warn if >80% of 5MB)
+    let lsSize = 0;
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      lsSize += (k.length + (localStorage.getItem(k)||'').length) * 2;
+    }
+    const lsMB = lsSize / (1024*1024);
+    if(lsMB > 4) issues.push({type:'storage', msg:`Storage ${lsMB.toFixed(1)}MB / 5MB — export data soon`, severity:'warn'});
+
+    // 2. Check for orphaned BOQ data (projects deleted but BOQ remains)
+    const projs = RH.getProjs();
+    const projIds = new Set(projs.map(p=>p.id));
+    let orphanedBOQ = 0;
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && k.includes('_boq_')){
+        const projId = k.split('_boq_')[1];
+        if(projId && !projIds.has(projId)) orphanedBOQ++;
+      }
+    }
+    if(orphanedBOQ > 0) issues.push({type:'orphan', msg:`${orphanedBOQ} orphaned BOQ record(s) found`, severity:'info'});
+
+    // 3. Check for overdue tasks
+    const todos = TDDB.getTodos().filter(t=>!t.done);
+    const today = new Date().toISOString().slice(0,10);
+    const overdue = todos.filter(t=>t.date && t.date < today);
+    if(overdue.length > 0) issues.push({type:'overdue', msg:`${overdue.length} overdue task(s)`, severity:'warn'});
+
+    // 4. Check for pending snags > 7 days old
+    try{
+      SNAGDB.getProjs().forEach(sp=>{
+        const snags = LS.get('snags_'+sp.id,[]);
+        const oldOpen = snags.filter(s=>s.status==='open' && now-s.createdAt > 7*24*60*60*1000);
+        if(oldOpen.length) issues.push({type:'snag', msg:`${oldOpen.length} snag(s) open >7 days in ${sp.name}`, severity:'warn'});
+      });
+    }catch(e){}
+
+    // 5. Check for BOQ items with Order Placed but no delivery update in 14+ days
+    projs.forEach(proj=>{
+      try{
+        const d = BOQDB.getData(proj.id);
+        const stalePlaced = d.items.filter(i=>i.status==='Order Placed' && i.orderDate && (now - new Date(i.orderDate).getTime()) > 14*24*60*60*1000);
+        if(stalePlaced.length) issues.push({type:'delivery', msg:`${stalePlaced.length} order(s) in "${proj.name}" pending delivery for 14+ days`, severity:'info'});
+      }catch(e){}
+    });
+
+    // 6. Check profile completeness (show once per week)
+    const lastProfileNag = parseInt(localStorage.getItem('dm_profile_nag')||'0');
+    if(now - lastProfileNag > 7*24*60*60*1000){
+      const prof = PROFDB.get();
+      const missing = [];
+      if(!prof.company) missing.push('studio name');
+      if(!prof.phone) missing.push('phone');
+      if(!prof.insta && !prof.companyEmail) missing.push('contact');
+      if(missing.length >= 2){
+        issues.push({type:'profile', msg:`Profile incomplete: missing ${missing.join(', ')}`, severity:'info'});
+        localStorage.setItem('dm_profile_nag', now.toString());
+      }
+    }
+
+    // Log to console for debugging
+    if(issues.length){
+      console.group('🔍 DesignMind Health Check — '+new Date().toLocaleTimeString());
+      issues.forEach(i=>console[i.severity==='warn'?'warn':'log']('['+i.type+'] '+i.msg));
+      console.groupEnd();
+    }
+
+    // Show toast for warnings only (not info) if user is actively using the app
+    const warnIssues = issues.filter(i=>i.severity==='warn');
+    if(warnIssues.length && !document.hidden){
+      // Show one at a time, staggered
+      warnIssues.forEach((issue,idx)=>{
+        setTimeout(()=>{
+          const icon = {storage:'💾',overdue:'⏰',snag:'🔧',delivery:'📦'}[issue.type]||'⚠️';
+          toast(icon+' '+issue.msg);
+        }, idx * 4000);
+      });
+    }
+
+  } catch(e){
+    console.warn('Health check error:', e);
+  }
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    PHASE 3 — BOQ & COST SHEET ENGINE
@@ -8983,22 +9513,42 @@ function boqImportTemplate(items){
 // ── BOQ PDF Export ────────────────────────────────────────────────────────────
 async function boqExportPDF(){
   if(!boqProjId){ toast('Select a project first'); return; }
-  if(typeof window.jspdf === 'undefined' && typeof jsPDF === 'undefined'){
-    toast('PDF library loading… try again in a moment'); return;
-  }
+
   const btn = document.querySelector('[onclick="boqExportPDF()"]');
   if(btn){ btn.disabled=true; btn.textContent='⏳ Generating…'; }
+  const resetBtn = ()=>{ if(btn){ btn.disabled=false; btn.textContent='📄 Export PDF'; } };
+
+  // Ensure jsPDF is loaded
+  const loadJsPDF = ()=> new Promise((res,rej)=>{
+    if(window.jspdf?.jsPDF || window.jsPDF){ res(); return; }
+    const s1 = document.createElement('script');
+    s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s1.onload = ()=>{
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js';
+      s2.onload = res; s2.onerror = rej;
+      document.head.appendChild(s2);
+    };
+    s1.onerror = rej;
+    document.head.appendChild(s1);
+  });
 
   try{
-    const { jsPDF } = window.jspdf || window;
-    const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+    await loadJsPDF();
+    const JsPDF = window.jspdf?.jsPDF || window.jsPDF;
+    if(!JsPDF){ toast('PDF library failed to load. Check your internet connection.'); resetBtn(); return; }
+
+    const doc = new JsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
     const data = BOQDB.getData(boqProjId);
     const proj = getAllBOQProjs().find(p=>p.id===boqProjId);
     const designer = PROFDB.get();
     const items = data.items;
+
+    if(!items.length){ toast('No items in BOQ to export'); resetBtn(); return; }
+
     const now = new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
 
-    // Header
+    // Header banner
     doc.setFillColor(28,26,23);
     doc.rect(0,0,297,28,'F');
     doc.setTextColor(247,244,239);
@@ -9012,91 +9562,97 @@ async function boqExportPDF(){
     doc.setTextColor(184,136,74);
     doc.text('DesignMind', 250, 12);
     doc.setTextColor(180,180,180);
-    doc.text('Generated: '+now, 250, 19);
+    doc.text('Generated: '+now, 234, 19);
 
     // Summary row
-    const totalEst = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
+    const totalEst  = items.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
     const totalPaid = items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0);
     doc.setFillColor(248,245,240);
     doc.rect(0,28,297,14,'F');
     doc.setTextColor(28,26,23);
     doc.setFontSize(9);
     doc.setFont('helvetica','bold');
-    doc.text('Total Estimate: ₹'+fmtFull(totalEst), 14, 37);
-    doc.text('Paid: ₹'+fmtFull(totalPaid), 100, 37);
-    doc.text('Balance: ₹'+fmtFull(Math.max(0,totalEst-totalPaid)), 180, 37);
-    doc.text(items.length+' items', 250, 37);
+    doc.text('Total Estimate: \u20B9'+fmtFull(totalEst), 14, 37);
+    doc.text('Paid: \u20B9'+fmtFull(totalPaid), 100, 37);
+    doc.text('Balance: \u20B9'+fmtFull(Math.max(0,totalEst-totalPaid)), 180, 37);
+    doc.text(items.length+' items', 258, 37);
 
-    // Table
+    // Build table rows grouped by room
     const roomGroups = {};
-    data.rooms.forEach(r=>roomGroups[r]=[]);
+    (data.rooms||[]).forEach(r=>roomGroups[r]=[]);
     items.forEach(item=>{ if(!roomGroups[item.room]) roomGroups[item.room]=[]; roomGroups[item.room].push(item); });
 
     const tableRows = [];
-    Object.entries(roomGroups).forEach(([room, roomItems])=>{
+    Object.entries(roomGroups).forEach(([room,roomItems])=>{
       if(!roomItems.length) return;
       tableRows.push([{ content:room.toUpperCase(), colSpan:8, styles:{fillColor:[240,235,228],fontStyle:'bold',textColor:[100,80,60],fontSize:8} }]);
       roomItems.forEach((item,idx)=>{
+        const status = item.status||'Pending';
+        const statusColor = status==='Delivered'?[60,120,80]:status==='Order Placed'?[60,80,150]:status==='Cancelled'?[150,60,60]:[120,100,70];
         tableRows.push([
           idx+1,
           item.item||'—',
-          (item.desc||'—').substring(0,35),
+          (item.desc||'—').substring(0,32),
           (item.qty||'—')+' '+(item.size||''),
-          '₹'+fmtFull(item.rate),
-          '₹'+fmtFull(item.total),
+          '\u20B9'+fmtFull(item.rate),
+          '\u20B9'+fmtFull(item.total),
           item.vendor||'—',
-          item.status||'Pending'
+          { content:status, styles:{ textColor:statusColor, fontStyle:'bold' } }
         ]);
       });
+      const roomTotal = roomItems.reduce((s,i)=>s+(parseFloat(i.total)||0),0);
+      tableRows.push([{ content:'Subtotal: \u20B9'+fmtFull(roomTotal), colSpan:8, styles:{halign:'right',fontStyle:'bold',fillColor:[252,250,247],textColor:[80,70,60],fontSize:8} }]);
     });
 
     doc.autoTable({
       startY: 46,
-      head: [['#','Item','Description','Qty/Size','Rate','Total','Vendor','Status']],
+      head: [['#','Item','Description','Qty/Size','Rate','Amount','Vendor','Status']],
       body: tableRows,
       theme: 'grid',
       headStyles:{ fillColor:[28,26,23], textColor:[247,244,239], fontSize:8, fontStyle:'bold' },
       bodyStyles:{ fontSize:7.5, textColor:[40,35,30] },
       alternateRowStyles:{ fillColor:[252,251,249] },
-      columnStyles:{
-        0:{cellWidth:8}, 1:{cellWidth:45}, 2:{cellWidth:55}, 3:{cellWidth:22},
-        4:{cellWidth:22}, 5:{cellWidth:25}, 6:{cellWidth:35}, 7:{cellWidth:20}
-      },
+      columnStyles:{ 0:{cellWidth:8}, 1:{cellWidth:42}, 2:{cellWidth:52}, 3:{cellWidth:22}, 4:{cellWidth:22}, 5:{cellWidth:25}, 6:{cellWidth:35}, 7:{cellWidth:22} },
       margin:{left:14,right:14},
-      didParseCell:(data)=>{
-        if(data.cell.raw?.colSpan===8) return;
-        if(data.column.index===7){
-          const s=data.cell.text[0];
-          if(s==='Delivered') data.cell.styles.textColor=[60,120,80];
-          else if(s==='Order Placed') data.cell.styles.textColor=[60,80,150];
-          else if(s==='Cancelled') data.cell.styles.textColor=[150,60,60];
-        }
-        if(data.column.index===5) data.cell.styles.fontStyle='bold';
-      }
+      didParseCell:(data)=>{ if(data.column.index===5&&data.section==='body') data.cell.styles.fontStyle='bold'; }
     });
 
-    // Footer
+    // Grand total row
+    const finalY = doc.lastAutoTable?.finalY || 180;
+    doc.setFillColor(28,26,23);
+    doc.rect(14, finalY+2, 269, 10, 'F');
+    doc.setTextColor(247,244,239);
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.text('GRAND TOTAL', 16, finalY+9);
+    doc.text('\u20B9'+fmtFull(totalEst), 170, finalY+9);
+    doc.setTextColor(184,136,74);
+    doc.text('PAID: \u20B9'+fmtFull(totalPaid), 205, finalY+9);
+    doc.setTextColor(totalEst>totalPaid?[220,80,60]:[94,114,96]);
+    doc.text('BAL: \u20B9'+fmtFull(Math.max(0,totalEst-totalPaid)), 245, finalY+9);
+
+    // Footer on each page
     const pageCount = doc.getNumberOfPages();
     for(let i=1;i<=pageCount;i++){
       doc.setPage(i);
       doc.setFontSize(7); doc.setTextColor(160,155,150);
-      doc.text('Page '+i+' of '+pageCount+' — '+( designer.company||'DesignMind')+' — '+( designer.phone?'+91 '+designer.phone:''), 14, 208);
+      doc.text('Page '+i+' of '+pageCount+' \u2014 '+(designer.company||'DesignMind')+(designer.phone?' \u2014 +91 '+designer.phone:''), 14, 208);
     }
 
-    doc.save((proj?.name||'BOQ')+' — BOQ.pdf');
+    doc.save((proj?.name||'BOQ').replace(/\s+/g,'-')+'-BOQ.pdf');
     toast('📄 PDF downloaded!');
   } catch(e){
     console.error('PDF error:',e);
-    toast('PDF generation failed — '+e.message);
+    toast('PDF failed: '+e.message+' — try Export CSV or Print instead');
   } finally {
-    if(btn){ btn.disabled=false; btn.textContent='📄 Export PDF'; }
+    resetBtn();
   }
 }
 
-
 function boqExportCSV(){
-  if(!boqProjId)return;
+  if(!boqProjId){ toast('Select a project first'); return; }
   const data=BOQDB.getData(boqProjId);
+  if(!data.items.length){ toast('No items in BOQ to export'); return; }
   const proj=getAllBOQProjs().find(p=>p.id===boqProjId);
   const header='No.,Room,Item,Description,Quantity,Size,Rate (₹),Amount (₹),Vendor,Order Status,Order Date,Cost Paid (₹),Notes';
   const rows=data.items.map((it,i)=>[i+1,it.room,it.item,it.desc,it.qty,it.size,it.rate,it.total,it.vendor,it.status,it.orderDate,it.cost,it.notes].map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(','));
@@ -9104,10 +9660,13 @@ function boqExportCSV(){
   const grandPaid=data.items.reduce((s,i)=>s+(parseFloat(i.cost)||0),0);
   rows.push(`"","","","","","","TOTAL","${fmtFull(grandTotal)}","","","","${fmtFull(grandPaid)}",""`);
   const csv=[header,...rows].join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=(proj?.name||'BOQ').replace(/\s+/g,'-')+'-BOQ.csv'; a.click();
-  toast('📥 BOQ exported as CSV');
+  try{
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=(proj?.name||'BOQ').replace(/\s+/g,'-')+'-BOQ.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    toast('📥 CSV downloaded!');
+  } catch(e){ toast('CSV export failed: '+e.message); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -9749,6 +10308,7 @@ function openSnagList(projId){
   document.getElementById('clientBanner').style.display='none';
   document.getElementById('snag-designer-hd').style.display='';
   document.getElementById('snag-shared-hd').style.display='none';
+  bnSetActive('bn-projects');
 
   // Populate project selector
   const sel=document.getElementById('snag-proj-sel');
