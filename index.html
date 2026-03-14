@@ -68,6 +68,8 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
 .hp-submit:disabled{opacity:.5;cursor:not-allowed;}
 .hp-inline-err{font-size:.67rem;color:#A84D3A;margin-top:4px;display:none;}
 .hp-inline-err.show{display:block;}
+.hp-hp-trap{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;tab-index:-1;}
+.hp-hp-trap input{width:1px;height:1px;border:none;padding:0;margin:0;}
 @media(max-width:700px){
   .hp-layout{flex-direction:column;border-radius:0;box-shadow:none;min-height:100vh;}
   .hp-left{display:none;}
@@ -1156,6 +1158,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
               <span class="phone-cc">🇮🇳 +91</span>
               <input class="fi" id="su-phone" type="tel" placeholder="98765 43210" maxlength="10" style="flex:1" oninput="this.value=this.value.replace(/\D/g,'');suValidate()">
             </div>
+            <div class="hp-inline-err" id="su-phone-hint" style="display:none"></div>
           </div>
 
           <div class="fi-wrap">
@@ -1186,6 +1189,7 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
           <div class="fi-wrap">
             <label class="fl">Company Email <span style="font-size:.6rem;color:var(--muted2);text-transform:none;letter-spacing:0;font-weight:400">(preferred for verification)</span></label>
             <input class="fi" id="su-company-email" type="email" placeholder="studio@yourcompany.com" oninput="suValidate()">
+            <div class="hp-inline-err" id="su-email-hint" style="display:none"></div>
           </div>
 
           <div style="text-align:center;font-size:.65rem;color:var(--muted2);margin:4px 0">— or —</div>
@@ -1223,6 +1227,11 @@ body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-
             📞 <strong>Manual approval:</strong> Our team calls you on your number within <strong>24 hours</strong> to verify and activate.
           </div>
 
+          <!-- Bot honeypot: hidden from humans via CSS, bots fill it -->
+          <div class="hp-hp-trap" aria-hidden="true" tabindex="-1">
+            <label for="hp-trap-field">Leave this blank</label>
+            <input type="text" id="hp-trap-field" name="website_url" autocomplete="off" tabindex="-1">
+          </div>
           <button class="hp-submit green" id="su-btn" onclick="hpSubmitSignup()" disabled>Submit for Approval →</button>
 
           <div class="hp-divider" style="margin:14px 0"><span>or</span></div>
@@ -5221,6 +5230,7 @@ async function screenshotAndShare(elementId, caption){
 }
 
 function hpTab(tab){
+  if(tab==='signup') window._signupFormLoadedAt = Date.now(); // for bot timing check
   // Dismiss pending overlay if present so the forms are accessible again
   document.getElementById('hp-pending-overlay')?.remove();
   const loginEl  = document.getElementById('hp-login');
@@ -5263,7 +5273,30 @@ function suValidate(){
   const pwd2    = document.getElementById('su-pwd2')?.value||'';
   const pwdErr  = document.getElementById('su-pwd-err');
   if(pwdErr) pwdErr.classList.toggle('show', pwd.length>0 && pwd2.length>0 && pwd!==pwd2);
-  const ok = name && /^\d{10}$/.test(phone) && nameid && nameid.length>=4 && company && pos && (email||insta) && pwd.length>=8 && pwd===pwd2;
+
+  // Phone field: show inline hint if non-Indian number entered
+  const phoneEl = document.getElementById('su-phone');
+  const phoneHint = document.getElementById('su-phone-hint');
+  if(phoneEl && phone.length===10 && !/^[6-9]/.test(phone)){
+    if(phoneHint){ phoneHint.style.display='block'; phoneHint.textContent='⚠️ Indian numbers start with 6, 7, 8 or 9'; }
+  } else {
+    if(phoneHint) phoneHint.style.display='none';
+  }
+
+  // Email format hint
+  const emailHint = document.getElementById('su-email-hint');
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    if(emailHint){ emailHint.style.display='block'; emailHint.textContent='⚠️ Please enter a valid email address'; }
+  } else {
+    if(emailHint) emailHint.style.display='none';
+  }
+
+  const phoneValid = /^[6-9]\d{9}$/.test(phone);
+  const emailValid = !email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const pwdHasExtra = /[0-9]/.test(pwd) || /[^A-Za-z0-9]/.test(pwd);
+  const ok = name && name.length>=2 && phoneValid && nameid && nameid.length>=4
+          && company && pos && (email||insta) && emailValid
+          && pwd.length>=8 && pwd===pwd2 && pwdHasExtra;
   const btn = document.getElementById('su-btn');
   if(btn){ btn.disabled = !ok; btn.style.opacity = ok?'1':'0.55'; }
 }
@@ -6323,6 +6356,10 @@ async function sendToSheets(payload){
 }
 
 // ── SIGNUP SUBMIT (new flow — approval required) ──────────────────────────────
+// Signup rate limit: max 3 attempts per 10 minutes per browser session
+let _signupAttempts = 0;
+let _signupBlockedUntil = 0;
+
 async function hpSubmitSignup(){
   const name      = document.getElementById('su-name')?.value.trim()||'';
   const phone     = document.getElementById('su-phone')?.value.trim()||'';
@@ -6335,15 +6372,76 @@ async function hpSubmitSignup(){
   const pwd2      = document.getElementById('su-pwd2')?.value||'';
   const btn       = document.getElementById('su-btn');
 
-  // Validation
-  if(!name)                      { toast('Please enter your full name'); return; }
-  if(!/^\d{10}$/.test(phone))   { toast('Enter a valid 10-digit mobile number'); return; }
+  // ── BOT PROTECTION 1: Honeypot field ──────────────────────────────────────
+  // Real users never see or fill this field. Bots fill everything.
+  const honeypot = document.getElementById('hp-trap-field')?.value||'';
+  if(honeypot){
+    // Silently appear to succeed — don't tell the bot it was blocked
+    if(btn){ btn.disabled=true; btn.textContent='Submitting…'; }
+    setTimeout(()=>{ showPendingScreen(name||'there', phone||'—', false); }, 1800);
+    return;
+  }
+
+  // ── BOT PROTECTION 2: Submission too fast (< 4 seconds after form loaded) ─
+  const formAge = window._signupFormLoadedAt ? Date.now() - window._signupFormLoadedAt : 99999;
+  if(formAge < 4000){
+    // Real humans take at least 4 seconds to fill 7 fields. Bots are instant.
+    toast('Please take a moment to review your details.');
+    return;
+  }
+
+  // ── BOT PROTECTION 3: Rate limiting ───────────────────────────────────────
+  const now = Date.now();
+  if(now < _signupBlockedUntil){
+    const secsLeft = Math.ceil((_signupBlockedUntil - now) / 1000);
+    toast(`Too many attempts. Please wait ${secsLeft} seconds.`);
+    return;
+  }
+  _signupAttempts++;
+  if(_signupAttempts >= 3){
+    _signupBlockedUntil = now + 10 * 60 * 1000; // block for 10 mins
+    _signupAttempts = 0;
+    toast('Too many signup attempts. Please try again in 10 minutes.');
+    return;
+  }
+
+  // ── BOT PROTECTION 4: Blocked phone numbers ───────────────────────────────
+  const blocked = JSON.parse(localStorage.getItem('dm_blocked')||'[]');
+  if(blocked.includes(phone)){
+    toast('This number cannot be registered.');
+    return;
+  }
+
+  // ── VALIDATION ─────────────────────────────────────────────────────────────
+  if(!name || name.length < 2)   { toast('Please enter your full name'); return; }
+  if(name.length > 60)           { toast('Name seems too long — please check'); return; }
+  if(!/^\d{10}$/.test(phone))    { toast('Enter a valid 10-digit mobile number'); return; }
+
+  // Indian mobile numbers start with 6, 7, 8, or 9
+  if(!/^[6-9]\d{9}$/.test(phone)){ toast('Enter a valid Indian mobile number (starts with 6-9)'); return; }
+
   if(!nameId || nameId.length<4) { toast('Please choose a Name ID (min 4 characters)'); return; }
-  if(!company)                   { toast('Please enter your company name'); return; }
+  if(nameId.length > 30)         { toast('Name ID is too long (max 30 characters)'); return; }
+  if(!company || company.length < 2) { toast('Please enter your company name'); return; }
   if(!position)                  { toast('Please select your position'); return; }
   if(!compEmail && !insta)       { toast('Please add your company email or Instagram'); return; }
+
+  // Email format check if provided
+  if(compEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(compEmail)){
+    toast('Please enter a valid email address'); return;
+  }
+
   if(pwd.length < 8)             { toast('Password must be at least 8 characters'); return; }
+  if(pwd.length > 100)           { toast('Password too long'); return; }
   if(pwd !== pwd2)               { toast('Passwords do not match'); return; }
+
+  // Weak password check
+  const hasUpper = /[A-Z]/.test(pwd);
+  const hasNum   = /[0-9]/.test(pwd);
+  const hasChar  = /[^A-Za-z0-9]/.test(pwd);
+  if(!hasNum && !hasChar){
+    toast('Password too weak — add at least one number or symbol'); return;
+  }
 
   // Check Name ID uniqueness against all leads
   const leads = JSON.parse(localStorage.getItem('dm_leads')||'[]');
